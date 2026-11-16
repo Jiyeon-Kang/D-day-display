@@ -1,0 +1,29 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+/build/
+/coverage/
+app.*.symbols
+app.*.map.json
+
+# Editors
+*.iml
+.idea/
+
+# Local configuration and credentials
+.env*.local
+*.jks
+*.keystore
+*.p8
+*.p12
+*.pem
+*.key
+*.mobileprovision
+
+# Operating system
+.DS_Store
+Thumbs.db

@@ -3,13 +3,17 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
+const _centerTreeColor = Color(0xff99eedd);
+const _sideTreeColor = Color(0xffffaacc);
+
+// Preserve the existing particle buckets and seeded arrangement.
 const _colors = [
-  Color(0xff1f755a),
-  Color(0xff60d291),
-  Color(0xffc3ffbf),
-  Color(0xff235975),
-  Color(0xff65b9dc),
-  Color(0xffdaedff),
+  _centerTreeColor,
+  _centerTreeColor,
+  _centerTreeColor,
+  _sideTreeColor,
+  _sideTreeColor,
+  _sideTreeColor,
 ];
 const _particleCount = 2200;
 const _snowCount = 160;

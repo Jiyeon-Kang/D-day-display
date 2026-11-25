@@ -29,8 +29,9 @@ the minimum SDK is deliberately updated.
 
 - Use Flutter's Canvas and CustomPainter; there are no runtime dependencies
   outside the Flutter SDK and no external assets for the animation.
-- Preserve the seeded 2,200 particles, three trees, six colors, 160 snowflakes,
-  and 12-second cycle unless the user asks to change the effect.
+- Preserve the seeded 2,200 particles, three trees, mint center (`#99EEDD`),
+  pink sides (`#FFAACC`), 160 snowflakes, and the 12-second cycle unless the user
+  asks to change the effect.
 - Repaint from the animation's Listenable instead of rebuilding the widget tree
   every frame. Batch particle geometry into one path per color.
 - Stop ticking while paused or outside the foreground. Resuming must preserve

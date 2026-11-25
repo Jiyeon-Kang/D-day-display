@@ -29,11 +29,7 @@ int upperForestPixels(Uint8List rgba) {
   // Snow is translucent. Solid colored pixels above the ground belong to trees.
   final end = _pixelWidth * (_pixelHeight * 0.68).floor() * 4;
   for (var i = 0; i < end; i += 4) {
-    final red = rgba[i];
-    final green = rgba[i + 1];
-    final blue = rgba[i + 2];
-    if (rgba[i + 3] > 200 &&
-        (green > red * 1.3 || (blue > red * 1.2 && blue > green * 1.1))) {
+    if (rgba[i + 3] > 200) {
       count++;
     }
   }

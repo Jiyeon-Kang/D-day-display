@@ -25,13 +25,19 @@ Run formatting, analysis, and tests before finishing changes. The supported
 baseline is Flutter 3.22.2 / Dart 3.4.3; avoid APIs requiring a newer SDK unless
 the minimum SDK is deliberately updated.
 
+When a device is already running this project, apply UI/animation edits to that
+session with hot reload or hot restart and verify the actual screen. Source tests
+do not refresh an installed app. Rebuild and reinstall when checking fresh launches.
+
 ## Rendering
 
 - Use Flutter's Canvas and CustomPainter; there are no runtime dependencies
   outside the Flutter SDK and no external assets for the animation.
 - Preserve the seeded 2,200 particles, three trees, mint center (`#99EEDD`),
-  pink sides (`#FFAACC`), 160 snowflakes, and the 12-second cycle unless the user
-  asks to change the effect.
+  pink sides (`#FFAACC`), and 160 snowflakes unless the user asks to change them.
+- Form the trees once on startup, then retain their shape while rotation and
+  snow continue. Do not automatically disperse or repeat the formation.
+- Replay must restart the startup animation and resume playback, even if paused.
 - Repaint from the animation's Listenable instead of rebuilding the widget tree
   every frame. Batch particle geometry into one path per color.
 - Stop ticking while paused or outside the foreground. Resuming must preserve

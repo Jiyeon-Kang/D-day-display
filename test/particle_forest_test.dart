@@ -11,7 +11,14 @@ const _pixelHeight = 844 * _pixelRatio;
 
 Future<Uint8List> renderScene(double seconds) async {
   final clock = ValueNotifier(seconds);
-  final painter = ParticleForestPainter(time: clock);
+  try {
+    return await renderPainter(ParticleForestPainter(time: clock));
+  } finally {
+    clock.dispose();
+  }
+}
+
+Future<Uint8List> renderPainter(ParticleForestPainter painter) async {
   final recorder = ui.PictureRecorder();
   painter.paint(ui.Canvas(recorder)..scale(_pixelRatio.toDouble()), _size);
   final picture = recorder.endRecording();
@@ -20,7 +27,6 @@ Future<Uint8List> renderScene(double seconds) async {
   final result = Uint8List.fromList(bytes!.buffer.asUint8List());
   image.dispose();
   picture.dispose();
-  clock.dispose();
   return result;
 }
 
@@ -39,17 +45,33 @@ int upperForestPixels(Uint8List rgba) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('particles form visible trees, disperse, and form again next cycle',
+  test('trees stay formed until the same animation clock is replayed',
       () async {
-    final scattered = await renderScene(0);
-    final formed = await renderScene(4);
-    final dispersed = await renderScene(10);
-    final nextCycle = await renderScene(16);
+    final clock = ValueNotifier(0.0);
+    addTearDown(clock.dispose);
+    final painter = ParticleForestPainter(time: clock);
 
+    final scattered = await renderPainter(painter);
     expect(upperForestPixels(scattered), 0);
-    expect(upperForestPixels(formed), greaterThan(100));
-    expect(upperForestPixels(dispersed), 0);
-    expect(upperForestPixels(nextCycle), greaterThan(100));
+
+    for (final seconds in [4.0, 10.0, 12.0, 30.0, 120.0]) {
+      clock.value = seconds;
+      final formed = await renderPainter(painter);
+      expect(
+        upperForestPixels(formed),
+        greaterThan(100),
+        reason: 'The formed trees must remain visible at $seconds seconds.',
+      );
+    }
+
+    clock.value = 0;
+    final replayed = await renderPainter(painter);
+    expect(upperForestPixels(replayed), 0);
+    expect(listEquals(scattered, replayed), isTrue);
+
+    clock.value = 4;
+    final reformed = await renderPainter(painter);
+    expect(upperForestPixels(reformed), greaterThan(100));
   });
 
   test('recreating the scene preserves its seeded appearance', () async {

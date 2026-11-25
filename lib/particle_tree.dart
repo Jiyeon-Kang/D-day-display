@@ -62,6 +62,15 @@ class _ParticleTreePageState extends State<ParticleTreePage>
     _updatePlayback();
   }
 
+  void _replay() {
+    _time.value = 0;
+    _lastElapsed = null;
+    if (_paused) {
+      setState(() => _paused = false);
+    }
+    _updatePlayback();
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     _foreground = state == AppLifecycleState.resumed;
@@ -102,7 +111,7 @@ class _ParticleTreePageState extends State<ParticleTreePage>
           children: [
             Semantics(
               image: true,
-              label: '눈 내리는 숲에서 입자가 세 그루의 트리로 모였다가 흩어집니다',
+              label: '눈 내리는 숲에서 입자가 세 그루의 트리로 모입니다',
               child: RepaintBoundary(
                 child: CustomPaint(painter: _painter),
               ),
@@ -118,7 +127,7 @@ class _ParticleTreePageState extends State<ParticleTreePage>
                 children: [
                   OutlinedButton(
                     style: buttonStyle,
-                    onPressed: () => _time.value = 0,
+                    onPressed: _replay,
                     child: const Text('다시 보기'),
                   ),
                   OutlinedButton(

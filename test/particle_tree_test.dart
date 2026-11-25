@@ -15,8 +15,7 @@ ParticleForestPainter forestPainter(WidgetTester tester) {
 }
 
 void main() {
-  testWidgets('pause, resume, and replay preserve the requested playback state',
-      (tester) async {
+  testWidgets('pause and resume preserve animation time', (tester) async {
     await tester.pumpWidget(const ParticleTreeApp());
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
@@ -30,25 +29,43 @@ void main() {
     expect(clock.value, pausedTime);
     expect(find.text('재생'), findsOneWidget);
 
-    await tester.tap(find.text('다시 보기'));
-    await tester.pump();
-    expect(clock.value, 0);
-    expect(find.text('재생'), findsOneWidget);
-
     await tester.tap(find.text('재생'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
-    expect(clock.value, greaterThan(0));
-
-    await tester.tap(find.text('다시 보기'));
-    expect(clock.value, 0);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 16));
-    expect(clock.value, greaterThan(0));
+    expect(clock.value, greaterThan(pausedTime));
     expect(find.text('일시정지'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('replay restarts the intro while playing or paused',
+      (tester) async {
+    await tester.pumpWidget(const ParticleTreeApp());
+    await tester.pump();
+    final clock = forestPainter(tester).time;
+
+    for (final pauseBeforeReplay in [false, true]) {
+      for (var frame = 0; frame < 200; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      expect(clock.value, greaterThan(3));
+
+      if (pauseBeforeReplay) {
+        await tester.tap(find.text('일시정지'));
+        await tester.pump();
+        expect(find.text('재생'), findsOneWidget);
+      }
+
+      await tester.tap(find.text('다시 보기'));
+      expect(clock.value, 0);
+      await tester.pump();
+      expect(find.text('일시정지'), findsOneWidget);
+      expect(find.text('재생'), findsNothing);
+
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(clock.value, greaterThan(0));
+    }
   });
 
   testWidgets('backgrounding freezes time and resumes without a time jump',

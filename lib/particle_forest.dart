@@ -17,7 +17,7 @@ const _colors = [
 ];
 const _particleCount = 2200;
 const _snowCount = 160;
-const _cycle = 12.0;
+const _formationDuration = 2.3;
 
 /// Draws the whole scene with seven paths, without rebuilding widgets per frame.
 class ParticleForestPainter extends CustomPainter {
@@ -38,7 +38,6 @@ class ParticleForestPainter extends CustomPainter {
     _drawSnow(canvas, size, t);
 
     final paths = List.generate(_colors.length, (_) => Path());
-    final phase = t % _cycle;
     final scale = math.min(size.width * 0.84, size.height * 0.59);
     final baseY = size.height * 0.73;
     final angle = t * 0.27;
@@ -47,9 +46,7 @@ class ParticleForestPainter extends CustomPainter {
 
     for (var i = 0; i < _particles.length; i++) {
       final p = _particles[i];
-      final form = _smooth((phase - p.delay) / 2.3);
-      final spill = _smooth((phase - 7 - p.delay) / 2.3);
-      final mix = form * (1 - spill);
+      final mix = _smooth((t - p.delay) / _formationDuration);
       final drift = math.sin(t * 1.4 + i * 2.4) * 0.035 * (1 - mix);
       final x = p.sx + (p.x - p.sx) * mix + drift;
       final y = p.sy + (p.y - p.sy) * mix - math.sin(mix * math.pi) * 0.24;

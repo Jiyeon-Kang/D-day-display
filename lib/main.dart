@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -14,6 +15,9 @@ class ParticleTreeApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const preview = String.fromEnvironment('CHRISTMAS_PREVIEW_DATE');
+    final previewDate = kDebugMode ? DateTime.tryParse(preview) : null;
+
     return MaterialApp(
       title: 'D-day-display',
       debugShowCheckedModeBanner: false,
@@ -22,7 +26,7 @@ class ParticleTreeApp extends StatelessWidget {
         scaffoldBackgroundColor: const Color(0xff050b12),
         useMaterial3: true,
       ),
-      home: const ParticleTreePage(),
+      home: ParticleTreePage(previewDate: previewDate),
     );
   }
 }

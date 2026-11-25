@@ -6,6 +6,9 @@ and cross-platform behavior in mind.
 - `lib/main.dart`: application entry point, theme, and portrait orientation.
 - `lib/particle_tree.dart`: screen, playback controls, and lifecycle handling.
 - `lib/particle_forest.dart`: deterministic particles and CustomPainter rendering.
+- `lib/christmas_countdown_date.dart`: device-local December 1–25 countdown dates.
+- `lib/christmas_countdown.dart`: seasonal particle text, local-clock refresh, and replay.
+- `lib/particle_countdown_text.dart`: dot-letter geometry and particle gathering.
 - `test/`: playback, lifecycle, layout, and rendering checks.
 - `android/`, `ios/`, `web/`: Flutter platform projects, tracked in Git.
 
@@ -40,9 +43,18 @@ do not refresh an installed app. Rebuild and reinstall when checking fresh launc
 - Use an eye-level front view, keeping tree centers fixed while each tree rotates
   around its own trunk. Keep the enlarged scene inside iPhone 15 (393x852) bounds
   with room above the playback controls.
-- Replay must restart the startup animation and resume playback, even if paused.
+- Replay must restart both trees and particle lettering and resume playback,
+  even if paused.
 - Repaint from the animation's Listenable instead of rebuilding the widget tree
   every frame. Batch particle geometry into one path per color.
 - Stop ticking while paused or outside the foreground. Resuming must preserve
   elapsed animation time, including a pause that spans a lifecycle change.
 - Keep controls reachable above system insets and usable with larger text.
+- Christmas D-day is visible December 1–25, using the device's local calendar.
+  December 1 is D-24; December 25 displays lowercase `merry christmas!`.
+  Render lettering as tiny mint/pink particles, with no normal text header,
+  card, subtitle, or decorative widgets. Refresh at midnight and app resume.
+  Animation pause must not pause calendar updates.
+- The optional CHRISTMAS_PREVIEW_DATE dart define is debug-only. Announce its
+  preview date through semantics and identify it when sharing screenshots.
+  Release builds always follow the real device clock.

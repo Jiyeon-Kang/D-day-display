@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
+import 'christmas_countdown.dart';
 import 'particle_forest.dart';
 
 class ParticleTreePage extends StatefulWidget {
-  const ParticleTreePage({super.key});
+  const ParticleTreePage({super.key, this.previewDate});
+
+  final DateTime? previewDate;
 
   @override
   State<ParticleTreePage> createState() => _ParticleTreePageState();
@@ -21,6 +24,7 @@ class _ParticleTreePageState extends State<ParticleTreePage>
   Duration? _lastElapsed;
   bool _paused = false;
   bool _foreground = true;
+  int _replayCount = 0;
 
   @override
   void initState() {
@@ -65,9 +69,10 @@ class _ParticleTreePageState extends State<ParticleTreePage>
   void _replay() {
     _time.value = 0;
     _lastElapsed = null;
-    if (_paused) {
-      setState(() => _paused = false);
-    }
+    setState(() {
+      _paused = false;
+      _replayCount++;
+    });
     _updatePlayback();
   }
 
@@ -114,6 +119,22 @@ class _ParticleTreePageState extends State<ParticleTreePage>
               label: '눈 내리는 숲에서 입자가 세 그루의 트리로 모입니다',
               child: RepaintBoundary(
                 child: CustomPaint(painter: _painter),
+              ),
+            ),
+            Positioned(
+              left: 24,
+              right: 24,
+              top: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: ChristmasCountdown(
+                    previewDate: widget.previewDate,
+                    animated: !_paused,
+                    replayCount: _replayCount,
+                  ),
+                ),
               ),
             ),
             Positioned(

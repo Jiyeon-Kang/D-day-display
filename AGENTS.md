@@ -37,6 +37,9 @@ do not refresh an installed app. Rebuild and reinstall when checking fresh launc
   pink sides (`#FFAACC`), and 160 snowflakes unless the user asks to change them.
 - Form the trees once on startup, then retain their shape while rotation and
   snow continue. Do not automatically disperse or repeat the formation.
+- Use an eye-level front view, keeping tree centers fixed while each tree rotates
+  around its own trunk. Keep the enlarged scene inside iPhone 15 (393x852) bounds
+  with room above the playback controls.
 - Replay must restart the startup animation and resume playback, even if paused.
 - Repaint from the animation's Listenable instead of rebuilding the widget tree
   every frame. Batch particle geometry into one path per color.

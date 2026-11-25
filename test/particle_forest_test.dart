@@ -4,10 +4,10 @@ import 'package:d_day_display/particle_forest.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-const _size = ui.Size(390, 844);
-const _pixelRatio = 2;
-const _pixelWidth = 390 * _pixelRatio;
-const _pixelHeight = 844 * _pixelRatio;
+const _size = ui.Size(393, 852);
+const _pixelRatio = 3;
+const _pixelWidth = 393 * _pixelRatio;
+const _pixelHeight = 852 * _pixelRatio;
 
 Future<Uint8List> renderScene(double seconds) async {
   final clock = ValueNotifier(seconds);
@@ -78,5 +78,62 @@ void main() {
     final first = await renderScene(4);
     final replay = await renderScene(4);
     expect(listEquals(first, replay), isTrue);
+  });
+
+  test('front-facing trees fit iPhone 15 and stay clear of playback controls',
+      () async {
+    const horizontalMargin = 12.0;
+    const controlsTop = 852.0 - 52 - 48;
+
+    for (final seconds in [4.0, 6.0, 12.0, 18.0, 24.0, 30.0, 120.0]) {
+      final pixels = await renderScene(seconds);
+      var left = _pixelWidth;
+      var top = _pixelHeight;
+      var right = 0;
+      var bottom = 0;
+      var mintPixels = 0;
+      var leftPinkPixels = 0;
+      var rightPinkPixels = 0;
+
+      for (var i = 0; i < pixels.length; i += 4) {
+        if (pixels[i + 3] <= 200) continue;
+        final red = pixels[i];
+        final green = pixels[i + 1];
+        final blue = pixels[i + 2];
+        final mint = green > blue && blue > red;
+        final pink = red > blue && blue > green;
+        if (!mint && !pink) continue;
+
+        final pixel = i ~/ 4;
+        final x = pixel % _pixelWidth;
+        final y = pixel ~/ _pixelWidth;
+        if (x < left) left = x;
+        if (x > right) right = x;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+        if (mint) mintPixels++;
+        if (pink && x < _pixelWidth / 2) leftPinkPixels++;
+        if (pink && x >= _pixelWidth / 2) rightPinkPixels++;
+      }
+
+      final bounds = ui.Rect.fromLTRB(
+        left / _pixelRatio,
+        top / _pixelRatio,
+        (right + 1) / _pixelRatio,
+        (bottom + 1) / _pixelRatio,
+      );
+      final reason = 'All three trees must remain framed at $seconds seconds.';
+      expect(mintPixels, greaterThan(100), reason: reason);
+      expect(leftPinkPixels, greaterThan(100), reason: reason);
+      expect(rightPinkPixels, greaterThan(100), reason: reason);
+      expect(bounds.left, greaterThanOrEqualTo(horizontalMargin),
+          reason: reason);
+      expect(bounds.right, lessThanOrEqualTo(393 - horizontalMargin),
+          reason: reason);
+      expect(bounds.top, greaterThanOrEqualTo(80), reason: reason);
+      expect(bounds.bottom, lessThanOrEqualTo(controlsTop - 32),
+          reason: reason);
+      expect(bounds.height, greaterThan(_size.height * 0.45), reason: reason);
+    }
   });
 }

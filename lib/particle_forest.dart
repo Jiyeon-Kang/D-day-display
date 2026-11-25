@@ -38,8 +38,8 @@ class ParticleForestPainter extends CustomPainter {
     _drawSnow(canvas, size, t);
 
     final paths = List.generate(_colors.length, (_) => Path());
-    final scale = math.min(size.width * 0.84, size.height * 0.59);
-    final baseY = size.height * 0.73;
+    final scale = math.min(size.width * 1.14, size.height * 0.56);
+    final baseY = size.height * 0.76;
     final angle = t * 0.27;
     final cos = math.cos(angle);
     final sin = math.sin(angle);
@@ -51,13 +51,17 @@ class ParticleForestPainter extends CustomPainter {
       final x = p.sx + (p.x - p.sx) * mix + drift;
       final y = p.sy + (p.y - p.sy) * mix - math.sin(mix * math.pi) * 0.24;
       final z = p.sz + (p.z - p.sz) * mix;
-      final rx = x * cos - z * sin;
-      final rz = x * sin + z * cos;
-      final perspective = 2.8 / (2.8 + rz);
+      // Rotate around each trunk so the three silhouettes stay in front view.
+      final localX = x - p.treeX;
+      final localZ = z - p.treeZ;
+      final rx = p.treeX + localX * cos - localZ * sin;
+      final rz = p.treeZ + localX * sin + localZ * cos;
+      final perspective = 6 / (6 + rz);
       final px = size.width / 2 + rx * scale * perspective;
-      final py = baseY + (y + rz * 0.12) * scale * perspective;
+      // Project from halfway up the tree instead of looking up from its base.
+      final py = baseY + ((y + 0.5) * perspective - 0.5) * scale;
       final dotSize =
-          p.size * perspective * (0.85 + 0.15 * math.sin(t * 3 + i));
+          p.size * 1.18 * perspective * (0.85 + 0.15 * math.sin(t * 3 + i));
 
       paths[p.color].addRect(
         Rect.fromLTWH(px, py, dotSize * 1.9, dotSize * 0.8),
@@ -102,8 +106,8 @@ List<_Particle> _makeParticles() {
 
   const trees = [
     (x: 0.0, z: 0.0, h: 1.0, r: 0.29),
-    (x: -0.29, z: 0.18, h: 0.66, r: 0.21),
-    (x: 0.31, z: 0.2, h: 0.72, r: 0.22),
+    (x: -0.25, z: 0.24, h: 0.66, r: 0.16),
+    (x: 0.25, z: 0.24, h: 0.72, r: 0.17),
   ];
 
   return List.generate(_particleCount, (i) {
@@ -119,6 +123,8 @@ List<_Particle> _makeParticles() {
         tree.r * h * (0.78 + 0.22 * math.cos(h * 38)) * (0.8 + 0.2 * random());
 
     return _Particle(
+      treeX: tree.x,
+      treeZ: tree.z,
       x: tree.x + math.cos(angle) * radius,
       y: -tree.h + h * tree.h,
       z: tree.z + math.sin(angle) * radius,
@@ -134,6 +140,8 @@ List<_Particle> _makeParticles() {
 
 class _Particle {
   const _Particle({
+    required this.treeX,
+    required this.treeZ,
     required this.x,
     required this.y,
     required this.z,
@@ -145,6 +153,8 @@ class _Particle {
     required this.color,
   });
 
+  final double treeX;
+  final double treeZ;
   final double x;
   final double y;
   final double z;

@@ -113,14 +113,17 @@ class _ChristmasCountdownState extends State<ChristmasCountdown>
     if (!mounted) return;
     final next = ChristmasCountdownDate.fromLocalDate(_now);
     if (next.year != _date.year || next.daysRemaining != _date.daysRemaining) {
+      final letteringChanged = next.displayLabel != _date.displayLabel;
       setState(() {
         _date = next;
-        _painter = ParticleCountdownTextPainter(
-          text: next.displayLabel,
-          time: _particleTime,
-        );
+        if (letteringChanged) {
+          _painter = ParticleCountdownTextPainter(
+            text: next.displayLabel,
+            time: _particleTime,
+          );
+        }
       });
-      _restartParticles();
+      if (letteringChanged) _restartParticles();
     }
     _updatePlayback();
     _scheduleRefresh();

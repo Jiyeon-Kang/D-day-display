@@ -37,6 +37,41 @@ void main() {
     expect(eve.isChristmas, isFalse);
   });
 
+  test('December 5 and 6 display the birthday greeting every year', () {
+    for (final year in [2026, 2027, 2028]) {
+      for (final day in [5, 6]) {
+        final birthday = ChristmasCountdownDate.fromLocalDate(
+          DateTime(year, 12, day, 23, 59),
+        );
+        expect(birthday.isVisible, isTrue);
+        expect(birthday.isBirthday, isTrue);
+        expect(birthday.displayLabel, '雫、誕生日おめでとう〜');
+        expect(birthday.semanticsLabel, '雫、誕生日おめでとう〜');
+        expect(birthday.daysRemaining, 25 - day);
+      }
+    }
+  });
+
+  test('birthday scenes are not used before, after, or outside December', () {
+    for (final date in [
+      DateTime(2026, 12, 4),
+      DateTime(2026, 12, 7),
+      DateTime(2026, 11, 5),
+      DateTime(2026, 6, 6),
+    ]) {
+      final countdown = ChristmasCountdownDate.fromLocalDate(date);
+      expect(countdown.isBirthday, isFalse);
+    }
+    expect(
+      ChristmasCountdownDate.fromLocalDate(DateTime(2026, 12, 4)).displayLabel,
+      'D-21',
+    );
+    expect(
+      ChristmasCountdownDate.fromLocalDate(DateTime(2026, 12, 7)).displayLabel,
+      'D-18',
+    );
+  });
+
   test('the particle greeting lasts through all of December 25', () {
     for (final hour in [0, 12, 23]) {
       final christmas = ChristmasCountdownDate.fromLocalDate(

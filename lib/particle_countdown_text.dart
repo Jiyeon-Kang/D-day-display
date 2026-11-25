@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
+import 'birthday_glyphs.dart';
+
 const _mint = Color(0xff99eedd);
 const _pink = Color(0xffffaacc);
 const _formationDuration = 2.3;
@@ -72,7 +74,7 @@ class ParticleCountdownTextPainter extends CustomPainter {
 
     final left = (size.width - _layout.width * cellPitch) / 2;
     final top = (size.height - _layout.height * cellPitch) / 2;
-    final particleScale = math.min(1.0, cellPitch / 7);
+    final particleScale = math.min(1.0, cellPitch / _layout.referencePitch);
     final paths = [Path(), Path()];
     final seconds = time.value;
 
@@ -121,9 +123,13 @@ double _smooth(double value) {
 _ParticleLettering _makeLayout(String text) {
   final trimmed = text.trim();
   if (trimmed.isEmpty) return const _ParticleLettering(0, 0, []);
-  final lines = trimmed.toLowerCase() == 'merry christmas!'
-      ? ['merry', 'christmas!']
-      : trimmed.split('\n');
+  final japanese = trimmed.runes.any((code) => code > 0x7f);
+  final lines = trimmed == birthdayMessage
+      ? ['雫、誕生日', 'おめでとう〜']
+      : trimmed.toLowerCase() == 'merry christmas!'
+          ? ['merry', 'christmas!']
+          : trimmed.split('\n');
+  final lineHeight = japanese ? 30.0 : _lineHeight;
   final lineWidths = lines.map((line) {
     var width = 0.0;
     for (final character in line.split('')) {
@@ -141,7 +147,7 @@ _ParticleLettering _makeLayout(String text) {
       for (var row = 0; row < rows.length; row++) {
         for (var column = 0; column < rows[row].length; column++) {
           if (rows[row][column] == '1') {
-            cells.add((x: cursor + column, y: line * _lineHeight + row));
+            cells.add((x: cursor + column, y: line * lineHeight + row));
           }
         }
       }
@@ -171,13 +177,15 @@ _ParticleLettering _makeLayout(String text) {
   }
 
   final particles = <_LetterParticle>[];
+  final clusterRadius = japanese ? 0 : 1;
+  final jitter = japanese ? 0.13 : 0.06;
   for (final cell in cells) {
-    for (var row = -1; row <= 1; row++) {
-      for (var column = -1; column <= 1; column++) {
+    for (var row = -clusterRadius; row <= clusterRadius; row++) {
+      for (var column = -clusterRadius; column <= clusterRadius; column++) {
         particles.add(
           _LetterParticle(
-            x: cell.x - minX + 0.5 + column * 0.27 + (random() - 0.5) * 0.06,
-            y: cell.y - minY + 0.5 + row * 0.27 + (random() - 0.5) * 0.06,
+            x: cell.x - minX + 0.5 + column * 0.27 + (random() - 0.5) * jitter,
+            y: cell.y - minY + 0.5 + row * 0.27 + (random() - 0.5) * jitter,
             sx: 0.04 + random() * 0.92,
             sy: 0.82 + random() * 0.12,
             delay: random() * 0.65,
@@ -193,19 +201,27 @@ _ParticleLettering _makeLayout(String text) {
     maxX - minX + 1,
     maxY - minY + 1,
     particles,
+    referencePitch: japanese ? 1.8 : 7,
   );
 }
 
 List<String> _rows(String character) {
-  return (_glyphs[character] ?? _glyphs['?']!).split('/');
+  return (_glyphs[character] ?? birthdayGlyphs[character] ?? _glyphs['?']!)
+      .split('/');
 }
 
 class _ParticleLettering {
-  const _ParticleLettering(this.width, this.height, this.particles);
+  const _ParticleLettering(
+    this.width,
+    this.height,
+    this.particles, {
+    this.referencePitch = 7,
+  });
 
   final double width;
   final double height;
   final List<_LetterParticle> particles;
+  final double referencePitch;
 }
 
 class _LetterParticle {

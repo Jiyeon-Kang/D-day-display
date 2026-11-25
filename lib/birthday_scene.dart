@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'birthday_hearts.dart';
 import 'particle_character.dart';
 
 const _characterColors = [
@@ -46,7 +47,7 @@ class _BirthdaySceneState extends State<BirthdayScene> {
   Widget build(BuildContext context) {
     return Semantics(
       image: true,
-      label: '청록색과 분홍색 생일 캐릭터가 작은 입자로 모입니다',
+      label: '작은 입자 하트 사이로 청록색과 분홍색 생일 캐릭터가 모입니다',
       child: RepaintBoundary(
         child: CustomPaint(
           painter: BirthdayCharacterPainter(
@@ -61,10 +62,12 @@ class _BirthdaySceneState extends State<BirthdayScene> {
 
 class BirthdayCharacterPainter extends CustomPainter {
   BirthdayCharacterPainter({required this.time, required this.characters})
-      : super(repaint: time);
+      : _hearts = BirthdayHeartsPainter(time: time),
+        super(repaint: time);
 
   final ValueListenable<double> time;
   final CharacterParticleCloud? characters;
+  final BirthdayHeartsPainter _hearts;
   final _paints = [
     for (final color in _characterColors) Paint()..color = color,
   ];
@@ -75,6 +78,7 @@ class BirthdayCharacterPainter extends CustomPainter {
     if (size.isEmpty) return;
     final seconds = time.value;
     _drawSnow(canvas, size, seconds);
+    _hearts.paint(canvas, size);
     final cloud = characters;
     if (cloud == null || cloud.particles.isEmpty) return;
 

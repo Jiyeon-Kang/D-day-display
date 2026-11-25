@@ -8,8 +8,13 @@ import 'birthday_hearts.dart';
 import 'particle_character.dart';
 
 const _characterColors = [
-  Color(0xff99eedd),
-  Color(0xffffaacc),
+  Color(0xff99eedd), // Left character's base.
+  Color(0xffffaacc), // Right character's base.
+  Color(0xffe8d8ee), // Rose lavender for face and hands.
+  Color(0xffcec8f2), // Outfit.
+  Color(0xffcde58d), // Cake.
+  Color(0xffa9cee9), // Plate.
+  Color(0xffffdc92), // Ornament.
 ];
 
 class BirthdayScene extends StatefulWidget {
@@ -119,7 +124,9 @@ class BirthdayCharacterPainter extends CustomPainter {
       final dotSize = point.size *
           math.min(1.18, frame.width / 200) *
           (0.85 + 0.15 * math.sin(seconds * 3 + i));
-      final color = point.side;
+      final color = point.tone == CharacterParticleTone.base
+          ? point.side
+          : point.tone.index + 1;
       paths[color].addRect(Rect.fromCenter(
         center: Offset(x, y),
         width: dotSize * 1.9,

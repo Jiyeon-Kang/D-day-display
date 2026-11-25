@@ -158,4 +158,30 @@ void main() {
     time.value = 4;
     expect(_portraitPixels(await _render(painter)).pink, greaterThan(500));
   });
+
+  test('detail colors separate cake, clothing, and faces from the base colors',
+      () async {
+    final time = ValueNotifier(4.0);
+    addTearDown(time.dispose);
+    final pixels = await _render(
+        BirthdayCharacterPainter(time: time, characters: realCharacters));
+    final colors = <int, int>{
+      0x99eedd: 0,
+      0xffaacc: 0,
+      0xe8d8ee: 0,
+      0xcec8f2: 0,
+      0xcde58d: 0,
+      0xa9cee9: 0,
+      0xffdc92: 0,
+    };
+    for (var i = 0; i < pixels.length; i += 4) {
+      if (pixels[i + 3] != 255) continue;
+      final rgb = pixels[i] << 16 | pixels[i + 1] << 8 | pixels[i + 2];
+      if (colors.containsKey(rgb)) colors[rgb] = colors[rgb]! + 1;
+    }
+    for (final entry in colors.entries) {
+      expect(entry.value, greaterThan(20),
+          reason: 'Expected visible ${entry.key.toRadixString(16)} details');
+    }
+  });
 }

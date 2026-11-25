@@ -2,8 +2,12 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
+/// Small detail groups retain the source drawing's boundaries while the painter
+/// supplies a restrained palette around the two main character colors.
+enum CharacterParticleTone { base, skin, outfit, cake, plate, ornament }
+
 /// A cropped contour sample of the two original character stickers.
-/// Source pixels determine geometry; the painter supplies the main colors.
+/// Source pixels determine geometry and detail groups, never final paint colors.
 class CharacterParticleCloud {
   CharacterParticleCloud._(this.sourceBounds, this.particles);
 
@@ -121,6 +125,17 @@ class CharacterParticleCloud {
           x: ((candidate.x + 0.5 - minX) / crop.width).clamp(0.0, 1.0),
           y: ((candidate.y + 0.5 - minY) / crop.height).clamp(0.0, 1.0),
           side: side,
+          tone: _detailTone(
+            rgba,
+            alpha,
+            luminance,
+            width: width,
+            height: height,
+            side: side,
+            crop: crop,
+            x: candidate.x,
+            y: candidate.y,
+          ),
           spreadX: 0.04 + random() * 0.92,
           spreadY: 0.86 + random() * 0.08,
           delay: random() * 0.65,
@@ -176,6 +191,7 @@ class CharacterParticlePoint {
     required this.spreadY,
     required this.delay,
     required this.size,
+    this.tone = CharacterParticleTone.base,
   });
 
   final double x;
@@ -185,6 +201,103 @@ class CharacterParticlePoint {
   final double spreadY;
   final double delay;
   final double size;
+  final CharacterParticleTone tone;
+}
+
+CharacterParticleTone _detailTone(
+  Uint8List rgba,
+  Float64List alpha,
+  Float64List luminance, {
+  required int width,
+  required int height,
+  required int side,
+  required ui.Rect crop,
+  required int x,
+  required int y,
+}) {
+  final u = (x + 0.5 - crop.left) / crop.width;
+  final v = (y + 0.5 - crop.top) / crop.height;
+  bool inside(double left, double top, double right, double bottom) =>
+      u >= left && u <= right && v >= top && v <= bottom;
+
+  final inCake = side == 0
+      ? inside(0.52, 0.63, 0.71, 0.84)
+      : inside(0.26, 0.62, 0.45, 0.84);
+  final inPlate = side == 0
+      ? inside(0.48, 0.75, 0.75, 0.89)
+      : inside(0.22, 0.77, 0.51, 0.88);
+  final inOutfit =
+      side == 0 ? inside(0.36, 0.71, 0.65, 1) : inside(0.41, 0.74, 0.59, 1);
+  final inSkin = side == 0
+      ? inside(0.27, 0.28, 0.74, 0.74) || inside(0.35, 0.64, 0.64, 0.92)
+      : inside(0.25, 0.35, 0.73, 0.78) || inside(0.34, 0.79, 0.59, 0.98);
+  final inOrnament = v < 0.4 || u < 0.16 || u > 0.84;
+  if (!inCake && !inPlate && !inOutfit && !inSkin && !inOrnament) {
+    return CharacterParticleTone.base;
+  }
+
+  var green = 0.0;
+  var gold = 0.0;
+  var neutral = 0.0;
+  var skin = 0.0;
+  var total = 0.0;
+  final radius = math.max(2, (crop.width / 75).round());
+  for (var dy = -radius; dy <= radius; dy++) {
+    for (var dx = -radius; dx <= radius; dx++) {
+      final nx = x + dx;
+      final ny = y + dy;
+      if (nx < crop.left || nx >= crop.right || ny < 0 || ny >= height) {
+        continue;
+      }
+      final pixel = ny * width + nx;
+      final opacity = alpha[pixel];
+      if (opacity < 0.65 || luminance[pixel] < 0.28) continue;
+      final offset = pixel * 4;
+      final r = (rgba[offset] / (255 * opacity)).clamp(0.0, 1.0);
+      final g = (rgba[offset + 1] / (255 * opacity)).clamp(0.0, 1.0);
+      final b = (rgba[offset + 2] / (255 * opacity)).clamp(0.0, 1.0);
+      final high = math.max(r, math.max(g, b));
+      final low = math.min(r, math.min(g, b));
+      final weight = 1 / (1 + (dx * dx + dy * dy) * 0.35);
+      total += weight;
+      if (g > b * 1.25 && r > b * 1.15 && g > r * 0.72) {
+        green += weight;
+      }
+      if (r > 0.58 &&
+          g > 0.36 &&
+          b < r * 0.68 &&
+          g > r * 0.52 &&
+          g > b * 1.25) {
+        gold += weight;
+      }
+      if (high - low < 0.2 && luminance[pixel] > 0.55) {
+        neutral += weight;
+      }
+      if (r > 0.7 &&
+          g > 0.5 &&
+          b > 0.45 &&
+          r > g * 1.035 &&
+          g > b * 1.025 &&
+          high - low < 0.3) {
+        skin += weight;
+      }
+    }
+  }
+  if (total == 0) return CharacterParticleTone.base;
+  // Dark contour pixels inherit a nearby fill, not their own near-black ink.
+  // Position gates keep cake greens and dress whites away from hair highlights.
+  if (inCake && (green + gold) / total > 0.12) {
+    return CharacterParticleTone.cake;
+  }
+  if (inPlate && neutral / total > 0.18 && skin / total < 0.15) {
+    return CharacterParticleTone.plate;
+  }
+  if (inSkin && skin / total > 0.16) return CharacterParticleTone.skin;
+  if (inOutfit && neutral / total > 0.2) return CharacterParticleTone.outfit;
+  if (inOrnament && gold / total > 0.22) {
+    return CharacterParticleTone.ornament;
+  }
+  return CharacterParticleTone.base;
 }
 
 class _InkCandidate {

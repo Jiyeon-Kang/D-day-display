@@ -1,3 +1,4 @@
+import 'package:d_day_display/birthday_scene.dart';
 import 'package:d_day_display/main.dart';
 import 'package:d_day_display/particle_forest.dart';
 import 'package:d_day_display/particle_tree.dart';
@@ -115,6 +116,61 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 16));
     expect(clock.value, greaterThan(pausedTime));
+  });
+
+  testWidgets(
+      'date arrows select birthday scenes and today restores the device',
+      (tester) async {
+    addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
+    await tester.pumpWidget(
+      MaterialApp(
+        home: ParticleTreePage(
+          now: () => DateTime(2026, 12, 4, 10),
+          showDateControls: true,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(BirthdayScene), findsNothing);
+    expect(find.text('2026.12.04 · 단말 날짜'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('next-date')));
+    await tester.pump();
+    expect(find.byType(BirthdayScene), findsOneWidget);
+    expect(find.text('2026.12.05 · 테스트'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('next-date')));
+    await tester.pump();
+    expect(find.byType(BirthdayScene), findsOneWidget);
+    expect(find.text('2026.12.06 · 테스트'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('next-date')));
+    await tester.pump();
+    expect(find.byType(BirthdayScene), findsNothing);
+    expect(find.text('2026.12.07 · 테스트'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('previous-date')));
+    await tester.pump();
+    expect(find.byType(BirthdayScene), findsOneWidget);
+    expect(find.text('2026.12.06 · 테스트'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('device-date')));
+    await tester.pump();
+    expect(find.byType(BirthdayScene), findsNothing);
+    expect(find.text('2026.12.04 · 단말 날짜'), findsOneWidget);
+    expect(find.text('일시정지'), findsOneWidget);
+  });
+
+  testWidgets('date testing controls can be omitted from the normal screen',
+      (tester) async {
+    addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
+    await tester.pumpWidget(
+      const MaterialApp(home: ParticleTreePage(showDateControls: false)),
+    );
+    expect(find.byKey(const ValueKey('previous-date')), findsNothing);
+    expect(find.byKey(const ValueKey('next-date')), findsNothing);
+    expect(find.byKey(const ValueKey('device-date')), findsNothing);
   });
 
   for (final scenario in [

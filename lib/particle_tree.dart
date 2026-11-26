@@ -9,6 +9,7 @@ import 'birthday_scene.dart';
 import 'christmas_countdown.dart';
 import 'particle_forest.dart';
 import 'scene_date_controller.dart';
+import 'tree_season.dart';
 
 class ParticleTreePage extends StatefulWidget {
   const ParticleTreePage({
@@ -30,7 +31,7 @@ class _ParticleTreePageState extends State<ParticleTreePage>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final _time = ValueNotifier<double>(0);
   late final Ticker _ticker;
-  late final ParticleForestPainter _painter;
+  late ParticleForestPainter _painter;
   late final SceneDateController _dates;
   late bool _wasBirthday;
   Duration? _lastElapsed;
@@ -45,12 +46,15 @@ class _ParticleTreePageState extends State<ParticleTreePage>
     binding.addObserver(this);
     _foreground = binding.lifecycleState == null ||
         binding.lifecycleState == AppLifecycleState.resumed;
-    _painter = ParticleForestPainter(time: _time);
     _ticker = createTicker(_onTick);
     _dates = SceneDateController(
       now: () => widget.now(),
       initialPreviewDate: widget.previewDate,
       active: _foreground,
+    );
+    _painter = ParticleForestPainter(
+      time: _time,
+      season: TreeSeason.fromLocalDate(_dates.date),
     );
     _wasBirthday = _dates.isBirthday;
     _dates.addListener(_onSceneDateChanged);
@@ -74,6 +78,10 @@ class _ParticleTreePageState extends State<ParticleTreePage>
 
   void _onSceneDateChanged() {
     if (!mounted) return;
+    final season = TreeSeason.fromLocalDate(_dates.date);
+    if (season != _painter.season) {
+      _painter = ParticleForestPainter(time: _time, season: season);
+    }
     final birthday = _dates.isBirthday;
     if (birthday != _wasBirthday) {
       _wasBirthday = birthday;

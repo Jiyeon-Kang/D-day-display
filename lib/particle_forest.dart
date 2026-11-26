@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
+import 'tree_season.dart';
+
 const _centerTreeColor = Color(0xff99eedd);
 const _sideTreeColor = Color(0xffffaacc);
 
@@ -15,19 +17,42 @@ const _colors = [
   _sideTreeColor,
   _sideTreeColor,
 ];
+const _classicColors = [
+  Color(0xff65ce95),
+  Color(0xff49b981),
+  Color(0xffe9686b),
+  Color(0xff4fb982),
+  Color(0xff3d9e70),
+  Color(0xffdc5260),
+];
+const _trees = [
+  (x: 0.0, z: 0.0, h: 1.0, r: 0.29),
+  (x: -0.25, z: 0.24, h: 0.66, r: 0.16),
+  (x: 0.25, z: 0.24, h: 0.72, r: 0.17),
+];
 const _particleCount = 2200;
 const _snowCount = 160;
 const _formationDuration = 2.3;
 
-/// Draws the whole scene with seven paths, without rebuilding widgets per frame.
+/// Draws the scene in batched color paths without rebuilding widgets per frame.
 class ParticleForestPainter extends CustomPainter {
-  ParticleForestPainter({required this.time})
-      : _particles = _makeParticles(),
+  ParticleForestPainter({
+    required this.time,
+    this.season = const TreeSeason(),
+  })  : _particles = _makeParticles(),
+        _paints = (season.useClassicColors ? _classicColors : _colors)
+            .map((color) => Paint()..color = color)
+            .toList(),
         super(repaint: time);
 
   final ValueListenable<double> time;
+  final TreeSeason season;
   final List<_Particle> _particles;
-  final _paints = _colors.map((color) => Paint()..color = color).toList();
+  final List<Paint> _paints;
+  final _starPaint = Paint()..color = const Color(0xfff4cf79);
+  final _starGlow = Paint()
+    ..color = const Color(0x55f4cf79)
+    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3);
   final _snowPaint = Paint()..color = const Color(0x73b9d6e5);
 
   @override
@@ -38,7 +63,10 @@ class ParticleForestPainter extends CustomPainter {
     _drawSnow(canvas, size, t);
 
     final paths = List.generate(_colors.length, (_) => Path());
-    final scale = math.min(size.width * 1.14, size.height * 0.56);
+    // Reserve the same topper space throughout the decorating season, so
+    // existing ornaments keep their positions when the date changes.
+    final scale = math.min(size.width * 1.14, size.height * 0.56) *
+        (season.ornamentCount > 0 ? 0.94 : 1);
     final baseY = size.height * 0.76;
     final angle = t * 0.27;
     final cos = math.cos(angle);
@@ -60,10 +88,16 @@ class ParticleForestPainter extends CustomPainter {
       final px = size.width / 2 + rx * scale * perspective;
       // Project from halfway up the tree instead of looking up from its base.
       final py = baseY + ((y + 0.5) * perspective - 0.5) * scale;
-      final dotSize =
-          p.size * 1.18 * perspective * (0.85 + 0.15 * math.sin(t * 3 + i));
+      final dotSize = p.size *
+          1.18 *
+          (season.useClassicColors ? 1.12 : 1) *
+          perspective *
+          (0.85 + 0.15 * math.sin(t * 3 + i));
 
-      paths[p.color].addRect(
+      final color = season.useClassicColors
+          ? (p.treeIndex == 0 ? 0 : 3) + (p.isRibbon ? 2 : p.color % 2)
+          : p.color;
+      paths[color].addRect(
         Rect.fromLTWH(px, py, dotSize * 1.9, dotSize * 0.8),
       );
     }
@@ -71,6 +105,55 @@ class ParticleForestPainter extends CustomPainter {
     for (var i = 0; i < paths.length; i++) {
       canvas.drawPath(paths[i], _paints[i]);
     }
+    _drawDecorations(canvas, size, t, scale, baseY);
+  }
+
+  void _drawDecorations(
+      Canvas canvas, Size size, double t, double scale, double baseY) {
+    if (!season.showStar) return;
+    final screenScale = math.min(1.2, scale / (393 * 1.14));
+    final star = _starPath(size, t, scale, baseY, screenScale);
+    canvas.drawPath(star, _starGlow);
+    canvas.drawPath(star, _starPaint);
+  }
+
+  Path _starPath(
+      Size size, double t, double scale, double baseY, double screenScale) {
+    final radius = 12.0 * screenScale;
+    final center = Offset(size.width / 2, baseY - scale - radius * 0.85);
+    final vertices = List.generate(10, (i) {
+      final angle = -math.pi / 2 + i * math.pi / 5;
+      return Offset(math.cos(angle), math.sin(angle)) *
+          radius *
+          (i.isEven ? 1 : 0.44);
+    });
+    final points = <Offset>[];
+    for (var edge = 0; edge < 10; edge++) {
+      for (var dot = 0; dot < 6; dot++) {
+        points.add(
+            Offset.lerp(vertices[edge], vertices[(edge + 1) % 10], dot / 6)!);
+      }
+      if (edge.isEven) {
+        for (var dot = 0; dot < 5; dot++) {
+          points.add(vertices[edge] * (dot / 5));
+        }
+      }
+    }
+    final path = Path();
+    for (var i = 0; i < points.length; i++) {
+      final mix =
+          _smooth((t - (i * 37 % 101) / 100 * 0.65) / _formationDuration);
+      final start = Offset(size.width * (0.08 + i * 0.381966 % 0.84),
+          size.height * (0.86 + i * 0.0237 % 0.08));
+      final point = Offset.lerp(start, center + points[i], mix)! -
+          Offset(0, math.sin(mix * math.pi) * size.height * 0.12);
+      final pulse = 0.92 + math.sin(t * 2.5 + i * 0.7) * 0.08;
+      path.addRect(Rect.fromCenter(
+          center: point,
+          width: 1.6 * screenScale * pulse,
+          height: 1.0 * screenScale * pulse));
+    }
+    return path;
   }
 
   void _drawSnow(Canvas canvas, Size size, double t) {
@@ -87,7 +170,7 @@ class ParticleForestPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant ParticleForestPainter oldDelegate) {
-    return oldDelegate.time != time;
+    return oldDelegate.time != time || oldDelegate.season != season;
   }
 }
 
@@ -104,25 +187,21 @@ List<_Particle> _makeParticles() {
     return seed / 4294967296;
   }
 
-  const trees = [
-    (x: 0.0, z: 0.0, h: 1.0, r: 0.29),
-    (x: -0.25, z: 0.24, h: 0.66, r: 0.16),
-    (x: 0.25, z: 0.24, h: 0.72, r: 0.17),
-  ];
-
   return List.generate(_particleCount, (i) {
     final treeIndex = i < _particleCount * 0.5
         ? 0
         : i < _particleCount * 0.75
             ? 1
             : 2;
-    final tree = trees[treeIndex];
+    final tree = _trees[treeIndex];
     final h = math.sqrt(random());
     final angle = random() * math.pi * 2;
     final radius =
         tree.r * h * (0.78 + 0.22 * math.cos(h * 38)) * (0.8 + 0.2 * random());
 
     return _Particle(
+      treeIndex: treeIndex,
+      isRibbon: math.sin(angle + h * 24) > 0.76,
       treeX: tree.x,
       treeZ: tree.z,
       x: tree.x + math.cos(angle) * radius,
@@ -140,6 +219,8 @@ List<_Particle> _makeParticles() {
 
 class _Particle {
   const _Particle({
+    required this.treeIndex,
+    required this.isRibbon,
     required this.treeX,
     required this.treeZ,
     required this.x,
@@ -153,6 +234,8 @@ class _Particle {
     required this.color,
   });
 
+  final int treeIndex;
+  final bool isRibbon;
   final double treeX;
   final double treeZ;
   final double x;

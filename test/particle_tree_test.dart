@@ -134,6 +134,8 @@ void main() {
 
     expect(find.byType(BirthdayScene), findsNothing);
     expect(find.text('2026.12.04 · 단말 날짜'), findsOneWidget);
+    expect(forestPainter(tester).season.ornamentCount, 6);
+    expect(forestPainter(tester).season.useClassicColors, isFalse);
 
     await tester.tap(find.byKey(const ValueKey('next-date')));
     await tester.pump();
@@ -149,6 +151,9 @@ void main() {
     await tester.pump();
     expect(find.byType(BirthdayScene), findsNothing);
     expect(find.text('2026.12.07 · 테스트'), findsOneWidget);
+    expect(forestPainter(tester).season.ornamentCount, 10);
+    expect(forestPainter(tester).season.useClassicColors, isTrue);
+    expect(forestPainter(tester).season.showStar, isFalse);
 
     await tester.tap(find.byKey(const ValueKey('previous-date')));
     await tester.pump();
@@ -161,6 +166,45 @@ void main() {
     expect(find.text('2026.12.04 · 단말 날짜'), findsOneWidget);
     expect(find.text('일시정지'), findsOneWidget);
   });
+
+  for (final paused in [false, true]) {
+    testWidgets(
+        'Christmas midnight updates decorations without replay, paused=$paused',
+        (tester) async {
+      var now = DateTime(2026, 12, 24, 23, 59, 59);
+      addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
+      await tester.pumpWidget(MaterialApp(
+        home: ParticleTreePage(now: () => now),
+      ));
+      for (var frame = 0; frame < 220; frame++) {
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      final before = forestPainter(tester);
+      final clock = before.time;
+      expect(clock.value, greaterThan(3));
+      expect(before.season.ornamentCount, 36);
+      expect(before.season.showStar, isFalse);
+      if (paused) {
+        await tester.tap(find.text('일시정지'));
+        await tester.pump();
+      }
+      final beforeMidnight = clock.value;
+      now = DateTime(2026, 12, 25, 0, 0, 1);
+      await tester.pump(const Duration(seconds: 2));
+
+      final christmas = forestPainter(tester);
+      expect(christmas.season.ornamentCount, 37);
+      expect(christmas.season.showStar, isTrue);
+      expect(christmas.season.useClassicColors, isTrue);
+      expect(identical(christmas.time, clock), isTrue);
+      expect(clock.value, greaterThanOrEqualTo(beforeMidnight));
+      if (paused) {
+        expect(clock.value, beforeMidnight);
+        expect(find.text('재생'), findsOneWidget);
+      }
+      expect(tester.takeException(), isNull);
+    });
+  }
 
   testWidgets('date testing controls can be omitted from the normal screen',
       (tester) async {

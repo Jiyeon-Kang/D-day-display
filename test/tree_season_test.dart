@@ -1,7 +1,36 @@
 import 'package:d_day_display/tree_season.dart';
+import 'package:d_day_display/christmas_ornament.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('new kinds unlock in stages without changing existing ornaments', () {
+    final previous = <ChristmasOrnamentKind>[];
+    for (var day = 1; day <= 25; day++) {
+      final season = TreeSeason.fromLocalDate(DateTime(2026, 12, day));
+      final kinds =
+          List.generate(season.ornamentCount, TreeSeason.ornamentKindForIndex);
+      expect(kinds.take(previous.length), previous,
+          reason: 'Day $day must preserve every earlier design');
+      final unlocked = 1 + [7, 12, 17, 22].where((date) => day >= date).length;
+      expect(kinds.toSet(), ChristmasOrnamentKind.values.take(unlocked).toSet(),
+          reason: 'Day $day may show only its unlocked kinds');
+      previous
+        ..clear()
+        ..addAll(kinds);
+    }
+  });
+
+  test('the first ornament at each boundary introduces its new kind', () {
+    const days = [1, 7, 12, 17, 22];
+    for (var stage = 0; stage < days.length; stage++) {
+      final firstSlot = (days[stage] - 1) * 3 ~/ 2;
+      expect(TreeSeason.ornamentKindForIndex(firstSlot),
+          ChristmasOrnamentKind.values[stage]);
+    }
+    expect(() => TreeSeason.ornamentKindForIndex(-1), throwsRangeError);
+    expect(() => TreeSeason.ornamentKindForIndex(37), throwsRangeError);
+  });
+
   test('ornaments grow by one or two every December day through Christmas', () {
     var previous = 0;
     for (var day = 1; day <= 25; day++) {

@@ -356,8 +356,7 @@ List<_Ornament> _makeOrnaments() {
       x: tree.x + math.cos(angle) * radius,
       y: -tree.h + height * tree.h,
       z: tree.z + math.sin(angle) * radius,
-      kind: ChristmasOrnamentKind
-          .values[index % ChristmasOrnamentKind.values.length],
+      kind: TreeSeason.ornamentKindForIndex(index),
     );
   }, growable: false);
 }

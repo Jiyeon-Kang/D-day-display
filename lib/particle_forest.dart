@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/rendering.dart';
 
+import 'christmas_ornament.dart';
 import 'tree_season.dart';
 
 const _centerTreeColor = Color(0xff99eedd);
@@ -40,6 +41,7 @@ class ParticleForestPainter extends CustomPainter {
     required this.time,
     this.season = const TreeSeason(),
   })  : _particles = _makeParticles(),
+        _ornaments = _makeOrnaments(),
         _paints = (season.useClassicColors ? _classicColors : _colors)
             .map((color) => Paint()..color = color)
             .toList(),
@@ -48,7 +50,21 @@ class ParticleForestPainter extends CustomPainter {
   final ValueListenable<double> time;
   final TreeSeason season;
   final List<_Particle> _particles;
+  final List<_Ornament> _ornaments;
   final List<Paint> _paints;
+  final _ornamentPaints = [
+    for (final opacity in [0.30, 0.62, 1.0])
+      for (final color in christmasOrnamentColors)
+        Paint()..color = color.withOpacity(opacity),
+  ];
+  final _ornamentGapPaints = [
+    for (final opacity in [0.15, 0.45, 0.85])
+      Paint()..color = const Color(0xff050b12).withOpacity(opacity),
+  ];
+  final _hookPaints = [
+    for (final opacity in [0.30, 0.62, 1.0])
+      Paint()..color = const Color(0xfff4cf79).withOpacity(opacity),
+  ];
   final _starPaint = Paint()..color = const Color(0xfff4cf79);
   final _starGlow = Paint()
     ..color = const Color(0x55f4cf79)
@@ -105,16 +121,79 @@ class ParticleForestPainter extends CustomPainter {
     for (var i = 0; i < paths.length; i++) {
       canvas.drawPath(paths[i], _paints[i]);
     }
-    _drawDecorations(canvas, size, t, scale, baseY);
+    _drawDecorations(canvas, size, t, scale, baseY, cos, sin);
   }
 
-  void _drawDecorations(
-      Canvas canvas, Size size, double t, double scale, double baseY) {
-    if (!season.showStar) return;
+  void _drawDecorations(Canvas canvas, Size size, double t, double scale,
+      double baseY, double cos, double sin) {
+    if (season.ornamentCount == 0 && !season.showStar) return;
+    final paths = List.generate(_ornamentPaints.length, (_) => Path());
+    final gaps = List.generate(3, (_) => Path());
+    final hooks = List.generate(3, (_) => Path());
     final screenScale = math.min(1.2, scale / (393 * 1.14));
-    final star = _starPath(size, t, scale, baseY, screenScale);
-    canvas.drawPath(star, _starGlow);
-    canvas.drawPath(star, _starPaint);
+    final count = math.min(season.ornamentCount, _ornaments.length);
+    for (var index = 0; index < count; index++) {
+      final ornament = _ornaments[index];
+      final tree = _trees[ornament.tree];
+      final localX = ornament.x - tree.x;
+      final localZ = ornament.z - tree.z;
+      final viewZ = localX * sin + localZ * cos;
+      final rx = tree.x + localX * cos - localZ * sin;
+      final rz = tree.z + viewZ;
+      final perspective = 6 / (6 + rz);
+      final center = Offset(size.width / 2 + rx * scale * perspective,
+          baseY + ((ornament.y + 0.5) * perspective - 0.5) * scale);
+      final depth = count <= 6
+          ? 2
+          : viewZ > 0.025
+              ? 0
+              : viewZ < -0.025
+                  ? 2
+                  : 1;
+      final sprite = getChristmasOrnamentSprite(ornament.kind);
+      final pitch =
+          1.32 * (ornament.tree == 0 ? 1 : 0.86) * screenScale * perspective;
+      // Upright motifs remain recognizable as their branch positions rotate.
+      for (var dot = 0; dot < sprite.dots.length + 3; dot++) {
+        final isHook = dot >= sprite.dots.length;
+        final cell = isHook ? null : sprite.dots[dot];
+        final offset = isHook
+            ? Offset(0, -sprite.height / 2 - (dot - sprite.dots.length) * 0.8)
+            : Offset(cell!.x, cell.y);
+        final key = index * 521 + dot;
+        final mix =
+            _smooth((t - (key * 43 % 101) / 100 * 0.65) / _formationDuration);
+        final start = Offset(size.width * (0.05 + (key * 0.61803398875 % 0.9)),
+            size.height * (0.86 + key * 0.041421356 % 0.08));
+        final point = Offset.lerp(start, center + offset * pitch, mix)! -
+            Offset(0, math.sin(mix * math.pi) * size.height * 0.1);
+        final pulse = 0.94 + math.sin(t * 2.8 + key * 1.7) * 0.06;
+        final rect = Rect.fromCenter(
+            center: point, width: pitch * pulse, height: pitch * pulse * 0.80);
+        if (isHook) {
+          hooks[depth].addRect(rect);
+        } else {
+          // A slim silhouette-shaped dark gap separates icing, faces and tree
+          // particles without adding a badge around each hanging decoration.
+          gaps[depth].addRect(rect.inflate(pitch * 0.22));
+          paths[depth * christmasOrnamentColors.length + cell!.color]
+              .addRect(rect);
+        }
+      }
+    }
+    for (var depth = 0; depth < 3; depth++) {
+      canvas.drawPath(gaps[depth], _ornamentGapPaints[depth]);
+      canvas.drawPath(hooks[depth], _hookPaints[depth]);
+      for (var color = 0; color < christmasOrnamentColors.length; color++) {
+        final index = depth * christmasOrnamentColors.length + color;
+        canvas.drawPath(paths[index], _ornamentPaints[index]);
+      }
+    }
+    if (season.showStar) {
+      final star = _starPath(size, t, scale, baseY, screenScale);
+      canvas.drawPath(star, _starGlow);
+      canvas.drawPath(star, _starPaint);
+    }
   }
 
   Path _starPath(
@@ -247,4 +326,53 @@ class _Particle {
   final double delay;
   final double size;
   final int color;
+}
+
+List<_Ornament> _makeOrnaments() {
+  const order = [0, 1, 0, 2];
+  const mainRows = [1, 2, 2, 3, 3, 4, 4];
+  const sideRows = [1, 1, 2, 2, 3];
+  final nextSlot = [0, 0, 0];
+  return List.generate(37, (index) {
+    final treeIndex = order[index % order.length];
+    final tree = _trees[treeIndex];
+    final ordinal = nextSlot[treeIndex]++;
+    final rows = treeIndex == 0 ? mainRows : sideRows;
+    // Spread additions over fixed branch tiers. Slot order is independent of
+    // the selected day, so existing motifs never shuffle as new ones appear.
+    var slot = treeIndex == 0 ? ordinal * 7 % 19 : ordinal * 4 % 9;
+    var row = 0;
+    while (slot >= rows[row]) {
+      slot -= rows[row++];
+    }
+    final height = treeIndex == 0 ? 0.28 + row * 0.10 : 0.34 + row * 0.14;
+    final angle = slot * math.pi * 2 / rows[row] + row * 0.71 + treeIndex * 1.1;
+    final radius = tree.r *
+        height *
+        (0.78 + 0.22 * math.cos(height * 38)) *
+        (treeIndex == 0 ? 0.80 : 0.92);
+    return _Ornament(
+      tree: treeIndex,
+      x: tree.x + math.cos(angle) * radius,
+      y: -tree.h + height * tree.h,
+      z: tree.z + math.sin(angle) * radius,
+      kind: ChristmasOrnamentKind
+          .values[index % ChristmasOrnamentKind.values.length],
+    );
+  }, growable: false);
+}
+
+class _Ornament {
+  const _Ornament(
+      {required this.tree,
+      required this.x,
+      required this.y,
+      required this.z,
+      required this.kind});
+
+  final int tree;
+  final double x;
+  final double y;
+  final double z;
+  final ChristmasOrnamentKind kind;
 }

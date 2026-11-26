@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 
 import 'package:d_day_display/particle_forest.dart';
+import 'package:d_day_display/christmas_ornament.dart';
 import 'package:d_day_display/tree_season.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -39,6 +40,10 @@ int _count(Uint8List pixels, bool Function(int r, int g, int b) matches,
 bool _isGold(int r, int g, int b) => r > 225 && g > 180 && b < 155;
 bool _isGreen(int r, int g, int b) => g > r * 1.2 && g > b * 1.15;
 bool _isRed(int r, int g, int b) => r > g * 1.4 && r > b * 1.3;
+
+bool _isMotif(int r, int g, int b) => christmasOrnamentColors
+    .take(9)
+    .any((color) => color.red == r && color.green == g && color.blue == b);
 
 ui.Rect _starBounds(Uint8List pixels) {
   var left = _width;
@@ -91,6 +96,31 @@ void main() {
     expect(_count(pixels, _isGold, bottom: 280), 0);
   });
 
+  test('motifs accumulate without moving the first cookie', () async {
+    final time = ValueNotifier(4.0);
+    addTearDown(time.dispose);
+    Future<Uint8List> day(int day) => _render(ParticleForestPainter(
+        time: time, season: TreeSeason.fromLocalDate(DateTime(2026, 12, day))));
+    final first = await day(1);
+    final second = await day(2);
+    final later = await day(24);
+    final firstDetails = _count(first, _isMotif);
+    expect(firstDetails, greaterThan(100));
+    expect(_count(second, _isMotif), greaterThan(firstDetails));
+    expect(_count(later, _isMotif), greaterThan(firstDetails * 3));
+    for (var i = 0; i < first.length; i += 4) {
+      if (first[i + 3] < 245 ||
+          !_isMotif(first[i], first[i + 1], first[i + 2])) {
+        continue;
+      }
+      // Growing the batch can change antialias coverage; cookie dots must
+      // still occupy their original pixels and retain their own detail hue.
+      expect(second[i + 3], greaterThanOrEqualTo(first[i + 3] - 8));
+      expect(_isMotif(second[i], second[i + 1], second[i + 2]), isTrue,
+          reason: 'Existing motifs must keep their anchored positions.');
+    }
+  });
+
   test('only Christmas Day adds a gold star above the central tip', () async {
     final time = ValueNotifier(4.0);
     addTearDown(time.dispose);
@@ -107,5 +137,25 @@ void main() {
     expect(star.height, inInclusiveRange(18, 28));
     expect(star.top, greaterThanOrEqualTo(198));
     expect(star.bottom, lessThan(230));
+  });
+
+  test(
+      'ornaments and Christmas star hold, pause, and replay with the tree clock',
+      () async {
+    final time = ValueNotifier(0.0);
+    addTearDown(time.dispose);
+    final painter = ParticleForestPainter(
+        time: time, season: TreeSeason.fromLocalDate(DateTime(2026, 12, 25)));
+    final initial = await _render(painter);
+    expect(_count(initial, _isGold, bottom: 700), 0);
+    for (final seconds in [4.0, 12.0, 30.0, 120.0]) {
+      time.value = seconds;
+      final formed = await _render(painter);
+      expect(_count(formed, _isMotif, top: 280, bottom: 700), greaterThan(500));
+      expect(_count(formed, _isGold, bottom: 280), greaterThan(100));
+      expect(listEquals(formed, await _render(painter)), isTrue);
+    }
+    time.value = 0;
+    expect(listEquals(initial, await _render(painter)), isTrue);
   });
 }

@@ -1,7 +1,7 @@
 import 'christmas_ornament.dart';
 import 'christmas_season_day.dart';
 
-/// Annual tree decorations based on the device's local December calendar.
+/// Tree decorations within the fixed Christmas event's local calendar window.
 class TreeSeason {
   const TreeSeason({
     this.ornamentCount = 0,

@@ -52,37 +52,67 @@ void main() {
     }
   });
 
-  test('completed decorations remain through November and reset December 1',
-      () {
+  test('completed decorations remain through December 31', () {
     for (final date in [
-      DateTime(2026, 1, 25),
-      DateTime(2026, 11, 30),
       DateTime(2026, 12, 26),
       DateTime(2026, 12, 31),
-      DateTime(2027, 1, 1),
     ]) {
       expect(
           TreeSeason.fromLocalDate(date),
           const TreeSeason(
               ornamentCount: 37, useClassicColors: true, showStar: true));
     }
-    expect(TreeSeason.fromLocalDate(DateTime(2027, 12, 1)),
-        const TreeSeason(ornamentCount: 1));
   });
 
-  test('local midnight and each year use calendar dates without elapsed hours',
+  test('all dates after the event keep the final tree without an annual reset',
       () {
-    for (final year in [2026, 2027, 2028]) {
-      expect(TreeSeason.fromLocalDate(DateTime(year, 12, 24, 23, 59, 59)),
-          const TreeSeason(ornamentCount: 36, useClassicColors: true));
-      final christmas = TreeSeason.fromLocalDate(DateTime(year, 12, 25));
-      expect(
-          christmas,
-          const TreeSeason(
-              ornamentCount: 37, useClassicColors: true, showStar: true));
-      expect(christmas.hashCode,
-          TreeSeason.fromLocalDate(DateTime(year, 12, 25, 23, 59)).hashCode);
+    const completed =
+        TreeSeason(ornamentCount: 37, useClassicColors: true, showStar: true);
+    for (final date in [
+      DateTime(2026, 12, 26),
+      DateTime(2027, 1, 1),
+      DateTime(2027, 11, 30),
+      DateTime(2027, 12, 1),
+      DateTime(2027, 12, 5),
+      DateTime(2027, 12, 6),
+      DateTime(2027, 12, 24),
+      DateTime(2028, 2, 29),
+      DateTime(2030, 12, 1),
+    ]) {
+      expect(TreeSeason.fromLocalDate(date), completed, reason: '$date');
     }
+  });
+
+  test('dates before the event keep the first tree and its original palette',
+      () {
+    for (final date in [
+      DateTime(2024, 2, 29),
+      DateTime(2025, 12, 25),
+      for (var month = 1; month < 12; month++) ...[
+        DateTime(2026, month, 1),
+        DateTime(2026, month + 1, 0, 23, 59, 59),
+      ],
+      DateTime(2026, 11, 26),
+      DateTime(2026, 11, 30, 23, 59, 59),
+      DateTime(2026, 12, 1),
+    ]) {
+      expect(TreeSeason.fromLocalDate(date), const TreeSeason(ornamentCount: 1),
+          reason: '$date');
+    }
+    expect(
+        TreeSeason.ornamentKindForIndex(0), ChristmasOrnamentKind.gingerbread);
+  });
+
+  test('the final decoration and star appear at local Christmas midnight', () {
+    expect(TreeSeason.fromLocalDate(DateTime(2026, 12, 24, 23, 59, 59)),
+        const TreeSeason(ornamentCount: 36, useClassicColors: true));
+    final christmas = TreeSeason.fromLocalDate(DateTime(2026, 12, 25));
+    expect(
+        christmas,
+        const TreeSeason(
+            ornamentCount: 37, useClassicColors: true, showStar: true));
+    expect(christmas.hashCode,
+        TreeSeason.fromLocalDate(DateTime(2026, 12, 25, 23, 59)).hashCode);
   });
 
   test('UTC instants are interpreted in the device local calendar', () {

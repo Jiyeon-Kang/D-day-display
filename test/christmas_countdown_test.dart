@@ -32,26 +32,61 @@ Future<void> showCountdown(
 
 void main() {
   testWidgets(
-      'the completed greeting stays visible after Christmas and into next year',
+      'the particle header holds the event endpoints outside December 1–25',
       (tester) async {
-    for (final date in [
-      DateTime(2026, 12, 26),
-      DateTime(2027, 1, 1),
-      DateTime(2027, 11, 30)
+    for (final scenario in [
+      (date: DateTime(2025, 12, 25), label: 'D-24'),
+      (date: DateTime(2026, 11, 26), label: 'D-24'),
+      (date: DateTime(2026, 11, 30), label: 'D-24'),
+      (date: DateTime(2026, 12, 26), label: 'merry christmas!'),
+      (date: DateTime(2026, 12, 31), label: 'merry christmas!'),
+      (date: DateTime(2027, 1, 1), label: 'merry christmas!'),
+      (date: DateTime(2027, 11, 30), label: 'merry christmas!'),
+      (date: DateTime(2027, 12, 1), label: 'merry christmas!'),
+      (date: DateTime(2027, 12, 5), label: 'merry christmas!'),
     ]) {
       await showCountdown(
         tester,
         ChristmasCountdown(
-          key: ValueKey(date),
-          now: () => date,
+          key: ValueKey(scenario.date),
+          now: () => scenario.date,
           animated: false,
         ),
       );
 
       expect(particleTextCanvas(), findsOneWidget);
-      expect(countdownPainter(tester).text, 'merry christmas!');
+      expect(countdownPainter(tester).text, scenario.label);
       expect(countdownTextWidgets(), findsNothing);
     }
+  });
+
+  testWidgets('New Year and future Decembers keep the completed greeting',
+      (tester) async {
+    var now = DateTime(2026, 12, 31, 23, 59, 59);
+    await showCountdown(
+      tester,
+      ChristmasCountdown(now: () => now, animated: false),
+    );
+    expect(countdownPainter(tester).text, 'merry christmas!');
+    final christmasPainter = countdownPainter(tester);
+
+    now = DateTime(2027, 1, 1, 0, 0, 1);
+    await tester.pump(const Duration(seconds: 2));
+    expect(countdownPainter(tester).text, 'merry christmas!');
+    expect(identical(countdownPainter(tester), christmasPainter), isTrue);
+
+    now = DateTime(2027, 11, 30, 23, 59, 59);
+    await tester.pump(const Duration(seconds: 31));
+    expect(countdownPainter(tester).text, 'merry christmas!');
+    expect(identical(countdownPainter(tester), christmasPainter), isTrue);
+    now = DateTime(2027, 12, 1, 0, 0, 1);
+    await tester.pump(const Duration(seconds: 2));
+    expect(countdownPainter(tester).text, 'merry christmas!');
+    expect(identical(countdownPainter(tester), christmasPainter), isTrue);
+    now = DateTime(2027, 12, 5);
+    await tester.pump(const Duration(seconds: 31));
+    expect(countdownPainter(tester).text, 'merry christmas!');
+    expect(identical(countdownPainter(tester), christmasPainter), isTrue);
   });
 
   testWidgets('December dates form particle letters without a text header',

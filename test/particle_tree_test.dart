@@ -167,6 +167,38 @@ void main() {
     expect(find.text('일시정지'), findsOneWidget);
   });
 
+  testWidgets('device date keeps the first tree until the event progresses',
+      (tester) async {
+    var now = DateTime(2026, 11, 30, 23, 59, 59);
+    addTearDown(() => tester.pumpWidget(const SizedBox.shrink()));
+    await tester.pumpWidget(MaterialApp(
+      home: ParticleTreePage(now: () => now, showDateControls: true),
+    ));
+    for (var frame = 0; frame < 220; frame++) {
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    final firstDay = forestPainter(tester);
+    final clock = firstDay.time;
+    final formedTime = clock.value;
+    expect(firstDay.season.ornamentCount, 1);
+    expect(firstDay.season.useClassicColors, isFalse);
+    expect(firstDay.season.showStar, isFalse);
+    expect(find.text('2026.11.30 · 단말 날짜'), findsOneWidget);
+
+    now = DateTime(2026, 12, 1, 0, 0, 1);
+    await tester.pump(const Duration(seconds: 2));
+    expect(identical(forestPainter(tester), firstDay), isTrue);
+    expect(clock.value, greaterThanOrEqualTo(formedTime));
+    expect(find.text('2026.12.01 · 단말 날짜'), findsOneWidget);
+
+    now = DateTime(2026, 12, 2);
+    await tester.pump(const Duration(seconds: 31));
+    expect(forestPainter(tester).season.ornamentCount, 3);
+    expect(identical(forestPainter(tester).time, clock), isTrue);
+    expect(clock.value, greaterThanOrEqualTo(formedTime));
+    expect(tester.takeException(), isNull);
+  });
+
   for (final paused in [false, true]) {
     testWidgets(
         'Christmas midnight updates decorations without replay, paused=$paused',
@@ -204,21 +236,23 @@ void main() {
       }
       for (final heldDate in [
         DateTime(2026, 12, 26),
+        DateTime(2026, 12, 31),
         DateTime(2027, 1, 1),
+        DateTime(2027, 6, 6),
         DateTime(2027, 11, 30),
+        DateTime(2027, 12, 1),
+        DateTime(2027, 12, 5),
+        DateTime(2027, 12, 6),
+        DateTime(2028, 12, 24),
       ]) {
         now = heldDate;
         await tester.pump(const Duration(seconds: 31));
+        expect(find.byType(BirthdayScene), findsNothing);
         expect(forestPainter(tester).season, christmas.season);
         expect(identical(forestPainter(tester).time, clock), isTrue);
         expect(clock.value, greaterThanOrEqualTo(beforeMidnight));
         if (paused) expect(clock.value, beforeMidnight);
       }
-      now = DateTime(2027, 12, 1);
-      await tester.pump(const Duration(seconds: 31));
-      expect(forestPainter(tester).season.ornamentCount, 1);
-      expect(forestPainter(tester).season.showStar, isFalse);
-      expect(forestPainter(tester).season.useClassicColors, isFalse);
       expect(tester.takeException(), isNull);
     });
   }

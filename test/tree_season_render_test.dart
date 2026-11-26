@@ -68,7 +68,7 @@ ui.Rect _starBounds(Uint8List pixels) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('dates after Christmas paint exactly the completed Christmas tree',
+  test('the rest of December paints exactly the completed Christmas tree',
       () async {
     final time = ValueNotifier(4.0);
     addTearDown(time.dispose);
@@ -77,12 +77,42 @@ void main() {
     for (final date in [
       DateTime(2026, 12, 26),
       DateTime(2026, 12, 31),
-      DateTime(2027, 1, 1),
-      DateTime(2027, 11, 30)
     ]) {
       final held = await _render(ParticleForestPainter(
           time: time, season: TreeSeason.fromLocalDate(date)));
       expect(listEquals(christmas, held), isTrue, reason: '$date');
+    }
+  });
+
+  test('later years paint exactly the completed Christmas tree', () async {
+    final time = ValueNotifier(4.0);
+    addTearDown(time.dispose);
+    final christmas = await _render(ParticleForestPainter(
+        time: time, season: TreeSeason.fromLocalDate(DateTime(2026, 12, 25))));
+    for (final date in [
+      DateTime(2027, 1, 1),
+      DateTime(2027, 12, 1),
+      DateTime(2027, 12, 5),
+    ]) {
+      final held = await _render(ParticleForestPainter(
+          time: time, season: TreeSeason.fromLocalDate(date)));
+      expect(listEquals(christmas, held), isTrue, reason: '$date');
+    }
+  });
+
+  test('dates before the event paint exactly the December 1 tree', () async {
+    final time = ValueNotifier(4.0);
+    addTearDown(time.dispose);
+    final firstDay = await _render(ParticleForestPainter(
+        time: time, season: TreeSeason.fromLocalDate(DateTime(2026, 12, 1))));
+    for (final date in [
+      DateTime(2025, 12, 25),
+      DateTime(2026, 11, 26),
+      DateTime(2026, 11, 30, 23, 59, 59),
+    ]) {
+      final before = await _render(ParticleForestPainter(
+          time: time, season: TreeSeason.fromLocalDate(date)));
+      expect(listEquals(firstDay, before), isTrue, reason: '$date');
     }
   });
 
@@ -128,7 +158,7 @@ void main() {
       () async {
     final time = ValueNotifier(4.0);
     addTearDown(time.dispose);
-    for (final date in [DateTime(2026, 12, 24), DateTime(2027, 12, 1)]) {
+    for (final date in [DateTime(2026, 11, 30), DateTime(2026, 12, 24)]) {
       final pixels = await _render(ParticleForestPainter(
           time: time, season: TreeSeason.fromLocalDate(date)));
       expect(_count(pixels, _isGold, bottom: 280), 0);

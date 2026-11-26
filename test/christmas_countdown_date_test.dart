@@ -2,15 +2,15 @@ import 'package:d_day_display/christmas_countdown_date.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  test('countdown starts at local midnight on December 1', () {
+  test('December 1 keeps the first screen shown before the event', () {
     final before = ChristmasCountdownDate.fromLocalDate(
       DateTime(2026, 11, 30, 23, 59, 59),
     );
     final start = ChristmasCountdownDate.fromLocalDate(DateTime(2026, 12, 1));
 
     expect(before.isVisible, isTrue);
-    expect(before.daysRemaining, 0);
-    expect(before.displayLabel, 'merry christmas!');
+    expect(before.daysRemaining, 24);
+    expect(before.displayLabel, 'D-24');
     expect(start.isVisible, isTrue);
     expect(start.daysRemaining, 24);
     expect(start.displayLabel, 'D-24');
@@ -38,18 +38,16 @@ void main() {
     expect(eve.isChristmas, isFalse);
   });
 
-  test('December 5 and 6 display the birthday greeting every year', () {
-    for (final year in [2026, 2027, 2028]) {
-      for (final day in [5, 6]) {
-        final birthday = ChristmasCountdownDate.fromLocalDate(
-          DateTime(year, 12, day, 23, 59),
-        );
-        expect(birthday.isVisible, isTrue);
-        expect(birthday.isBirthday, isTrue);
-        expect(birthday.displayLabel, '雫、誕生日おめでとう〜');
-        expect(birthday.semanticsLabel, '雫、誕生日おめでとう〜');
-        expect(birthday.daysRemaining, 25 - day);
-      }
+  test('December 5 and 6 keep the birthday greeting during the event', () {
+    for (final day in [5, 6]) {
+      final birthday = ChristmasCountdownDate.fromLocalDate(
+        DateTime(2026, 12, day, 23, 59),
+      );
+      expect(birthday.isVisible, isTrue);
+      expect(birthday.isBirthday, isTrue);
+      expect(birthday.displayLabel, '雫、誕生日おめでとう〜');
+      expect(birthday.semanticsLabel, '雫、誕生日おめでとう〜');
+      expect(birthday.daysRemaining, 25 - day);
     }
   });
 
@@ -59,6 +57,9 @@ void main() {
       DateTime(2026, 12, 7),
       DateTime(2026, 11, 5),
       DateTime(2026, 6, 6),
+      DateTime(2025, 12, 5),
+      DateTime(2027, 12, 5),
+      DateTime(2027, 12, 6),
     ]) {
       final countdown = ChristmasCountdownDate.fromLocalDate(date);
       expect(countdown.isBirthday, isFalse);
@@ -88,13 +89,10 @@ void main() {
     }
   });
 
-  test('the Christmas display stays complete until next December', () {
+  test('the Christmas display stays complete through December 31', () {
     for (final date in [
       DateTime(2026, 12, 26),
       DateTime(2026, 12, 31),
-      DateTime(2027, 1, 1),
-      DateTime(2027, 6, 25),
-      DateTime(2027, 11, 30, 23, 59, 59),
     ]) {
       final countdown = ChristmasCountdownDate.fromLocalDate(date);
       expect(countdown.isVisible, isTrue);
@@ -105,19 +103,52 @@ void main() {
       expect(countdown.day, date.day);
       expect(countdown.isBirthday, isFalse);
     }
-    final reset = ChristmasCountdownDate.fromLocalDate(DateTime(2027, 12, 1));
-    expect(reset.daysRemaining, 24);
-    expect(reset.displayLabel, 'D-24');
   });
 
-  test('each year uses that year’s December 25, including leap years', () {
-    for (final year in [2024, 2026, 2027, 2028, 2030]) {
-      final first = ChristmasCountdownDate.fromLocalDate(DateTime(year, 12, 1));
-      final christmas =
-          ChristmasCountdownDate.fromLocalDate(DateTime(year, 12, 25));
-      expect(first.year, year);
-      expect(first.daysRemaining, 24);
-      expect(christmas.daysRemaining, 0);
+  test('dates after the event keep Christmas and the actual device date', () {
+    for (final date in [
+      DateTime(2027, 1, 1),
+      DateTime(2027, 2, 5),
+      DateTime(2027, 6, 6),
+      DateTime(2027, 11, 30, 23, 59, 59),
+      DateTime(2027, 12, 1),
+      DateTime(2027, 12, 5),
+      DateTime(2027, 12, 6),
+      DateTime(2027, 12, 25),
+      DateTime(2028, 2, 29),
+      DateTime(2030, 12, 25),
+    ]) {
+      final countdown = ChristmasCountdownDate.fromLocalDate(date);
+      expect(countdown.isVisible, isTrue);
+      expect(countdown.daysRemaining, 0);
+      expect(countdown.displayLabel, 'merry christmas!');
+      expect(countdown.semanticsLabel, '크리스마스 완성 화면입니다. 메리 크리스마스.');
+      expect(countdown.year, date.year);
+      expect(countdown.month, date.month);
+      expect(countdown.day, date.day);
+      expect(countdown.isBirthday, isFalse);
+      expect(countdown.isChristmas, isTrue);
+    }
+  });
+
+  test('every date before the event shows D-24 and keeps its actual date', () {
+    for (final date in [
+      DateTime(2024, 2, 29),
+      DateTime(2025, 12, 5),
+      DateTime(2025, 12, 25),
+      DateTime(2026, 1, 1),
+      DateTime(2026, 11, 26),
+      DateTime(2026, 11, 30, 23, 59, 59),
+    ]) {
+      final countdown = ChristmasCountdownDate.fromLocalDate(date);
+      expect(countdown.isVisible, isTrue);
+      expect(countdown.daysRemaining, 24);
+      expect(countdown.displayLabel, 'D-24');
+      expect(countdown.isBirthday, isFalse);
+      expect(countdown.isChristmas, isFalse);
+      expect(countdown.year, date.year);
+      expect(countdown.month, date.month);
+      expect(countdown.day, date.day);
     }
   });
 

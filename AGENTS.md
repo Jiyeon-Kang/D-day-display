@@ -7,7 +7,7 @@ and cross-platform behavior in mind.
 - `lib/particle_tree.dart`: screen, playback controls, and lifecycle handling.
 - `lib/particle_forest.dart`: deterministic particles and CustomPainter rendering.
 - `lib/tree_season.dart`: local-date ornament progression, tree palette, and Christmas star policy.
-- `lib/christmas_season_day.dart`: shared display phase, held until the next December.
+- `lib/christmas_season_day.dart`: shared display phase clamped to the fixed 2026 event window.
 - `lib/christmas_ornament.dart`: code-native dot sprites and palette for five Christmas ornament designs.
 - `lib/birthday_scene.dart`, `lib/particle_character.dart`: birthday image sampling and particle rendering.
 - `lib/birthday_hearts.dart`: dotted heart outlines behind birthday characters.
@@ -66,8 +66,13 @@ do not refresh an installed app. Rebuild and reinstall when checking fresh launc
   Decorations follow the local or selected test date and the scene animation
   clock. Preserve the formed trees and elapsed time on ordinary calendar updates,
   including when paused. After December 25, retain the complete scene with 37
-  ornaments, classic colors, star, and Christmas greeting through next November.
-  Reset annually on December 1. Keep actual device/test dates intact; only clamp
+  ornaments, classic colors, star, and Christmas greeting indefinitely, including
+  January 1 and later Decembers. Before December 1, 2026, retain the December 1
+  screen (mint/pink trees, one cookie, no star, D-24). Only December 1–25, 2026
+  progresses: compare full local dates against this fixed event window, not only
+  month/day or a year derived from DateTime.now(). The event year is configured
+  by `christmasSeasonYear`; restarting the app must not move the window.
+  Keep actual device/test dates intact; only clamp
   the display phase via `christmas_season_day.dart`.
 - Form the trees once on startup, then retain their shape while rotation and
   snow continue. Do not automatically disperse or repeat the formation.
@@ -81,14 +86,14 @@ do not refresh an installed app. Rebuild and reinstall when checking fresh launc
 - Stop ticking while paused or outside the foreground. Resuming must preserve
   elapsed animation time, including a pause that spans a lifecycle change.
 - Keep controls reachable above system insets and usable with larger text.
-- Christmas D-day is visible December 1–25, using the device's local calendar.
+- Christmas D-day progresses December 1–25, 2026, using the device's local calendar.
   December 1 is D-24; December 25 displays lowercase `merry christmas!`,
-  which stays visible until the next December countdown starts. Do not announce
+  which stays visible for all later dates. Before the event, retain D-24. Do not announce
   today as Christmas in accessibility text for retained dates after the 25th.
   Render lettering as tiny mint/pink particles, with no normal text header,
   card, subtitle, or decorative widgets. Refresh at midnight and app resume.
   Animation pause must not pause calendar updates.
-- Every December 5 and 6, replace the trees with both birthday characters and
+- On December 5 and 6, 2026, replace the trees with both birthday characters and
   the particle phrase `雫、誕生日おめでとう〜`. Preserve the main hair colors
   `#99EEDD` on the left and `#FFAACC` on the right, without the original
   HAPPY BIRTHDAY lettering. Distinguish details with rose lavender (`#E8D8EE`) faces and hands, pale

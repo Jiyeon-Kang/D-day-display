@@ -68,19 +68,22 @@ ui.Rect _starBounds(Uint8List pixels) {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  test('outside the season the exact original mint and pink scene remains',
+  test('dates after Christmas paint exactly the completed Christmas tree',
       () async {
     final time = ValueNotifier(4.0);
     addTearDown(time.dispose);
-    final original = await _render(ParticleForestPainter(time: time));
-    final outside = await _render(ParticleForestPainter(
-        time: time, season: TreeSeason.fromLocalDate(DateTime(2026, 11, 26))));
-    expect(listEquals(original, outside), isTrue);
-    expect(_count(outside, (r, g, b) => r == 153 && g == 238 && b == 221),
-        greaterThan(100));
-    expect(_count(outside, (r, g, b) => r == 255 && g == 170 && b == 204),
-        greaterThan(100));
-    expect(_count(outside, _isGold), 0);
+    final christmas = await _render(ParticleForestPainter(
+        time: time, season: TreeSeason.fromLocalDate(DateTime(2026, 12, 25))));
+    for (final date in [
+      DateTime(2026, 12, 26),
+      DateTime(2026, 12, 31),
+      DateTime(2027, 1, 1),
+      DateTime(2027, 11, 30)
+    ]) {
+      final held = await _render(ParticleForestPainter(
+          time: time, season: TreeSeason.fromLocalDate(date)));
+      expect(listEquals(christmas, held), isTrue, reason: '$date');
+    }
   });
 
   test('December 7 uses green foliage and red garlands on all three trees',
@@ -121,10 +124,11 @@ void main() {
     }
   });
 
-  test('only Christmas Day adds a gold star above the central tip', () async {
+  test('the gold star begins on Christmas Day and stays above the central tip',
+      () async {
     final time = ValueNotifier(4.0);
     addTearDown(time.dispose);
-    for (final date in [DateTime(2026, 12, 24), DateTime(2026, 12, 26)]) {
+    for (final date in [DateTime(2026, 12, 24), DateTime(2027, 12, 1)]) {
       final pixels = await _render(ParticleForestPainter(
           time: time, season: TreeSeason.fromLocalDate(date)));
       expect(_count(pixels, _isGold, bottom: 280), 0);

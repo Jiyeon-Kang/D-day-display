@@ -52,7 +52,8 @@ void main() {
     }
   });
 
-  test('dates outside the December 1 to 25 season have the neutral tree', () {
+  test('completed decorations remain through November and reset December 1',
+      () {
     for (final date in [
       DateTime(2026, 1, 25),
       DateTime(2026, 11, 30),
@@ -60,8 +61,13 @@ void main() {
       DateTime(2026, 12, 31),
       DateTime(2027, 1, 1),
     ]) {
-      expect(TreeSeason.fromLocalDate(date), const TreeSeason());
+      expect(
+          TreeSeason.fromLocalDate(date),
+          const TreeSeason(
+              ornamentCount: 37, useClassicColors: true, showStar: true));
     }
+    expect(TreeSeason.fromLocalDate(DateTime(2027, 12, 1)),
+        const TreeSeason(ornamentCount: 1));
   });
 
   test('local midnight and each year use calendar dates without elapsed hours',

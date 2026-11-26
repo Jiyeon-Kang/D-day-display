@@ -8,8 +8,9 @@ void main() {
     );
     final start = ChristmasCountdownDate.fromLocalDate(DateTime(2026, 12, 1));
 
-    expect(before.isVisible, isFalse);
-    expect(before.daysRemaining, isNull);
+    expect(before.isVisible, isTrue);
+    expect(before.daysRemaining, 0);
+    expect(before.displayLabel, 'merry christmas!');
     expect(start.isVisible, isTrue);
     expect(start.daysRemaining, 24);
     expect(start.displayLabel, 'D-24');
@@ -87,31 +88,26 @@ void main() {
     }
   });
 
-  test('countdown disappears at midnight on December 26', () {
-    final after = ChristmasCountdownDate.fromLocalDate(DateTime(2026, 12, 26));
-
-    expect(after.isVisible, isFalse);
-    expect(after.isChristmas, isFalse);
-    expect(after.daysRemaining, isNull);
-    expect(after.displayLabel, isEmpty);
-    expect(after.subtitle, isEmpty);
-    expect(after.semanticsLabel, isEmpty);
-  });
-
-  test('other months remain hidden, without counting toward next Christmas',
-      () {
+  test('the Christmas display stays complete until next December', () {
     for (final date in [
-      DateTime(2026, 1, 1),
-      DateTime(2026, 6, 25),
-      DateTime(2026, 11, 25),
+      DateTime(2026, 12, 26),
       DateTime(2026, 12, 31),
       DateTime(2027, 1, 1),
+      DateTime(2027, 6, 25),
+      DateTime(2027, 11, 30, 23, 59, 59),
     ]) {
       final countdown = ChristmasCountdownDate.fromLocalDate(date);
-      expect(countdown.isVisible, isFalse,
-          reason: '$date is outside the season.');
-      expect(countdown.daysRemaining, isNull);
+      expect(countdown.isVisible, isTrue);
+      expect(countdown.daysRemaining, 0);
+      expect(countdown.displayLabel, 'merry christmas!');
+      expect(countdown.semanticsLabel, isNot(contains('오늘은 크리스마스')));
+      expect(countdown.month, date.month);
+      expect(countdown.day, date.day);
+      expect(countdown.isBirthday, isFalse);
     }
+    final reset = ChristmasCountdownDate.fromLocalDate(DateTime(2027, 12, 1));
+    expect(reset.daysRemaining, 24);
+    expect(reset.displayLabel, 'D-24');
   });
 
   test('each year uses that year’s December 25, including leap years', () {

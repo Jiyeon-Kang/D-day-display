@@ -1,4 +1,5 @@
 import 'christmas_ornament.dart';
+import 'christmas_season_day.dart';
 
 /// Annual tree decorations based on the device's local December calendar.
 class TreeSeason {
@@ -9,14 +10,11 @@ class TreeSeason {
   });
 
   factory TreeSeason.fromLocalDate(DateTime date) {
-    final local = date.toLocal();
-    if (local.month != DateTime.december || local.day > 25) {
-      return const TreeSeason();
-    }
+    final day = christmasSeasonDay(date);
     return TreeSeason(
-      ornamentCount: local.day * 3 ~/ 2,
-      useClassicColors: local.day >= 7,
-      showStar: local.day == 25,
+      ornamentCount: day * 3 ~/ 2,
+      useClassicColors: day >= 7,
+      showStar: day == 25,
     );
   }
 

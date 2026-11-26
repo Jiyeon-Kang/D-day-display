@@ -112,7 +112,10 @@ class _ChristmasCountdownState extends State<ChristmasCountdown>
   void _refreshDate() {
     if (!mounted) return;
     final next = ChristmasCountdownDate.fromLocalDate(_now);
-    if (next.year != _date.year || next.daysRemaining != _date.daysRemaining) {
+    if (next.year != _date.year ||
+        next.month != _date.month ||
+        next.day != _date.day ||
+        next.daysRemaining != _date.daysRemaining) {
       final letteringChanged = next.displayLabel != _date.displayLabel;
       setState(() {
         _date = next;

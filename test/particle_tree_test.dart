@@ -202,6 +202,23 @@ void main() {
         expect(clock.value, beforeMidnight);
         expect(find.text('재생'), findsOneWidget);
       }
+      for (final heldDate in [
+        DateTime(2026, 12, 26),
+        DateTime(2027, 1, 1),
+        DateTime(2027, 11, 30),
+      ]) {
+        now = heldDate;
+        await tester.pump(const Duration(seconds: 31));
+        expect(forestPainter(tester).season, christmas.season);
+        expect(identical(forestPainter(tester).time, clock), isTrue);
+        expect(clock.value, greaterThanOrEqualTo(beforeMidnight));
+        if (paused) expect(clock.value, beforeMidnight);
+      }
+      now = DateTime(2027, 12, 1);
+      await tester.pump(const Duration(seconds: 31));
+      expect(forestPainter(tester).season.ornamentCount, 1);
+      expect(forestPainter(tester).season.showStar, isFalse);
+      expect(forestPainter(tester).season.useClassicColors, isFalse);
       expect(tester.takeException(), isNull);
     });
   }

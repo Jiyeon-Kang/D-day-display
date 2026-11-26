@@ -31,9 +31,14 @@ Future<void> showCountdown(
 }
 
 void main() {
-  testWidgets('countdown is hidden outside the Christmas season',
+  testWidgets(
+      'the completed greeting stays visible after Christmas and into next year',
       (tester) async {
-    for (final date in [DateTime(2026, 11, 30), DateTime(2026, 12, 26)]) {
+    for (final date in [
+      DateTime(2026, 12, 26),
+      DateTime(2027, 1, 1),
+      DateTime(2027, 11, 30)
+    ]) {
       await showCountdown(
         tester,
         ChristmasCountdown(
@@ -43,9 +48,9 @@ void main() {
         ),
       );
 
-      expect(particleTextCanvas(), findsNothing);
+      expect(particleTextCanvas(), findsOneWidget);
+      expect(countdownPainter(tester).text, 'merry christmas!');
       expect(countdownTextWidgets(), findsNothing);
-      expect(tester.getSize(find.byType(ChristmasCountdown)).height, 0);
     }
   });
 

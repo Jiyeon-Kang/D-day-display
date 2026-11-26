@@ -7,6 +7,7 @@ and cross-platform behavior in mind.
 - `lib/particle_tree.dart`: screen, playback controls, and lifecycle handling.
 - `lib/particle_forest.dart`: deterministic particles and CustomPainter rendering.
 - `lib/tree_season.dart`: local-date ornament progression, tree palette, and Christmas star policy.
+- `lib/christmas_season_day.dart`: shared display phase, held until the next December.
 - `lib/christmas_ornament.dart`: code-native dot sprites and palette for five Christmas ornament designs.
 - `lib/birthday_scene.dart`, `lib/particle_character.dart`: birthday image sampling and particle rendering.
 - `lib/birthday_hearts.dart`: dotted heart outlines behind birthday characters.
@@ -48,8 +49,8 @@ do not refresh an installed app. Rebuild and reinstall when checking fresh launc
   keep the source asset unchanged when adjusting particle colors. Embedded Japanese glyph
   data derives from Noto Sans JP, licensed in `assets/licenses/NotoSansJP-OFL.txt`.
 - Preserve the seeded 2,200 tree particles, three trees, and 160 snowflakes.
-  Outside December 7–25, use the mint center (`#99EEDD`) and pink sides (`#FFAACC`).
-  December 7–25 uses evergreen trees with red particle ribbons and varied Christmas ornaments.
+  December 1–6 uses the mint center (`#99EEDD`) and pink sides (`#FFAACC`),
+  with the existing birthday scenes on December 5–6. From December 7, use evergreen trees with red particle ribbons and varied Christmas ornaments.
 - From December 1–25, show `floor(day * 1.5)` ornaments across the forest:
   1, 3, 4, 6, and so on, reaching 37 on Christmas Day. Add one or two per day
   using a fixed sequence of positions and designs; existing ornaments must not
@@ -60,11 +61,14 @@ do not refresh an installed app. Rebuild and reinstall when checking fresh launc
   canes December 7, snowmen December 12, Santa December 17, Rudolph December 22.
   A stage starts with its new kind, then cycles through all unlocked designs.
   Assign kinds from the fixed slot birth date; never remap old slots at unlocks.
-  On December 25 only, add a gold five-point particle star
+  On December 25, add a gold five-point particle star
   at the top of the center tree, clear of the particle lettering.
   Decorations follow the local or selected test date and the scene animation
   clock. Preserve the formed trees and elapsed time on ordinary calendar updates,
-  including when paused. Outside December 1–25, omit seasonal decorations.
+  including when paused. After December 25, retain the complete scene with 37
+  ornaments, classic colors, star, and Christmas greeting through next November.
+  Reset annually on December 1. Keep actual device/test dates intact; only clamp
+  the display phase via `christmas_season_day.dart`.
 - Form the trees once on startup, then retain their shape while rotation and
   snow continue. Do not automatically disperse or repeat the formation.
 - Use an eye-level front view, keeping tree centers fixed while each tree rotates
@@ -78,7 +82,9 @@ do not refresh an installed app. Rebuild and reinstall when checking fresh launc
   elapsed animation time, including a pause that spans a lifecycle change.
 - Keep controls reachable above system insets and usable with larger text.
 - Christmas D-day is visible December 1–25, using the device's local calendar.
-  December 1 is D-24; December 25 displays lowercase `merry christmas!`.
+  December 1 is D-24; December 25 displays lowercase `merry christmas!`,
+  which stays visible until the next December countdown starts. Do not announce
+  today as Christmas in accessibility text for retained dates after the 25th.
   Render lettering as tiny mint/pink particles, with no normal text header,
   card, subtitle, or decorative widgets. Refresh at midnight and app resume.
   Animation pause must not pause calendar updates.

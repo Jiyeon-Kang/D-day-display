@@ -6,6 +6,8 @@ and cross-platform behavior in mind.
 - `lib/main.dart`: application entry point, theme, and portrait orientation.
 - `lib/particle_tree.dart`: screen, playback controls, and lifecycle handling.
 - `lib/particle_forest.dart`: deterministic particles and CustomPainter rendering.
+- `lib/tree_season.dart`: local-date ornament progression, tree palette, and Christmas star policy.
+- `lib/christmas_ornament.dart`: code-native dot sprites and palette for five Christmas ornament designs.
 - `lib/birthday_scene.dart`, `lib/particle_character.dart`: birthday image sampling and particle rendering.
 - `lib/birthday_hearts.dart`: dotted heart outlines behind birthday characters.
 - `lib/birthday_glyphs.dart`: embedded Noto Sans JP-derived birthday lettering.
@@ -45,8 +47,24 @@ do not refresh an installed app. Rebuild and reinstall when checking fresh launc
   Sample its contours and nearby source colors into the birthday detail palette;
   keep the source asset unchanged when adjusting particle colors. Embedded Japanese glyph
   data derives from Noto Sans JP, licensed in `assets/licenses/NotoSansJP-OFL.txt`.
-- Preserve the seeded 2,200 particles, three trees, mint center (`#99EEDD`),
-  pink sides (`#FFAACC`), and 160 snowflakes unless the user asks to change them.
+- Preserve the seeded 2,200 tree particles, three trees, and 160 snowflakes.
+  Outside December 7–25, use the mint center (`#99EEDD`) and pink sides (`#FFAACC`).
+  December 7–25 uses evergreen trees with red particle ribbons and varied Christmas ornaments.
+- From December 1–25, show `floor(day * 1.5)` ornaments across the forest:
+  1, 3, 4, 6, and so on, reaching 37 on Christmas Day. Add one or two per day
+  using a fixed sequence of positions and designs; existing ornaments must not
+  move or change design when the count changes. Render gingerbread cookies,
+  candy canes, snowmen, Santa, and Rudolph as code-native dot sprites with
+  small multicolor details, keeping their silhouettes readable on iPhone 15.
+  Unlock designs by the date each ornament is added: cookies December 1, candy
+  canes December 7, snowmen December 12, Santa December 17, Rudolph December 22.
+  A stage starts with its new kind, then cycles through all unlocked designs.
+  Assign kinds from the fixed slot birth date; never remap old slots at unlocks.
+  On December 25 only, add a gold five-point particle star
+  at the top of the center tree, clear of the particle lettering.
+  Decorations follow the local or selected test date and the scene animation
+  clock. Preserve the formed trees and elapsed time on ordinary calendar updates,
+  including when paused. Outside December 1–25, omit seasonal decorations.
 - Form the trees once on startup, then retain their shape while rotation and
   snow continue. Do not automatically disperse or repeat the formation.
 - Use an eye-level front view, keeping tree centers fixed while each tree rotates
@@ -73,6 +91,8 @@ do not refresh an installed app. Rebuild and reinstall when checking fresh launc
   title, faces, and controls. Hearts gather once, then hold with gentle twinkling;
   use the scene clock so pause and replay affect hearts and characters together.
   Switch scene types on calendar changes; do not reform held trees every day.
+  The tree ornament progression and Christmas palette must not alter this
+  birthday scene, its colors, hearts, or greeting.
 - The optional CHRISTMAS_PREVIEW_DATE dart define is debug-only. Announce its
   preview date through semantics and identify it when sharing screenshots.
   Release builds always follow the real device clock.
